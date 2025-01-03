@@ -1,15 +1,19 @@
 from flask import Flask, render_template
 from models import db, User, Proxy, Admin
 from flask_login import LoginManager
+from dotenv import load_dotenv
+import os
 
 from auth import auth_bp
 
 app = Flask(__name__)
 
+load_dotenv()
+
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5433/ProxyManagement'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 db.init_app(app)
 
