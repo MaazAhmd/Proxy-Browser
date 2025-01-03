@@ -13,7 +13,13 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEng
 from PyQt5.QtGui import QIcon, QPixmap, QPainter
 from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtNetwork import QNetworkCookieJar
+from PyQt5.QtNetwork import QNetworkProxy
+import requests
 
+proxy_url = "gw.dataimpulse.com"
+proxy_port = 823
+proxy_user = "5cc85982d6b8f4731244"
+proxy_password = "5479abb73bb2a44d"
 
 class CustomWebEnginePage(QWebEnginePage):
     """Custom QWebEnginePage for handling JavaScript and CSP issues."""
@@ -30,6 +36,10 @@ class CustomWebEnginePage(QWebEnginePage):
 class SimpleBrowser(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        # Set up proxy
+        self.set_proxy()
+        print(f"Proxy set to {proxy_url}:{proxy_port}")
 
         # Browser Window Setup
         self.setWindowTitle("Simple Browser")
@@ -78,6 +88,33 @@ class SimpleBrowser(QMainWindow):
 
         # Open a new tab when the browser starts
         self.new_tab()
+
+    def set_proxy(self):
+        """Set up the proxy for the browser."""
+        proxy = QNetworkProxy()
+        proxy.setType(QNetworkProxy.HttpProxy)
+        proxy.setHostName(proxy_url)
+        proxy.setPort(proxy_port)
+        proxy.setUser(proxy_user)
+        proxy.setPassword(proxy_password)
+        QNetworkProxy.setApplicationProxy(proxy)
+
+    def check_proxy(self):
+        """Check if the proxy is active by making a test request."""
+        proxy_address = f"{proxy_url}:{proxy_port}"
+        proxies = {
+            "http": f"http://{proxy_user}:{proxy_password}@{proxy_address}",
+            "https": f"https://{proxy_user}:{proxy_password}@{proxy_address}",
+        }
+        try:
+            response = requests.get("http://httpbin.org/ip", proxies=proxies, timeout=5)
+            if response.status_code == 200:
+                print("Proxy is active. IP:", response.json()["origin"])
+            else:
+                print("Failed to connect through proxy.")
+        except requests.RequestException as e:
+            print("Error connecting through proxy:", e)
+
 
     def new_tab(self):
         """Open a new tab in the tab widget."""
@@ -215,5 +252,7 @@ if __name__ == "__main__":
 
     browser = SimpleBrowser()
     browser.show()
+
+    browser.check_proxy()
 
     app.exec_()
