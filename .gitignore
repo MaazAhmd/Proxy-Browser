@@ -1,0 +1,7 @@
+# Envs:
+env/
+venv/
+.env
+
+migrations/
+*zip
