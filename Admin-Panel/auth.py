@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from models import db, User
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import login_user, logout_user, current_user, login_required
+from models import db, Admin
+from werkzeug.security import generate_password_hash
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -9,11 +10,12 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        user = User.query.filter_by(email=email).first()
+        admin = Admin.query.filter_by(email=email).first()
 
-        if user and check_password_hash(user.password, password):
+        if admin and admin.verify_password(password):
+            login_user(admin)
             flash('Logged in successfully!', 'success')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('index'))
         flash('Invalid credentials', 'danger')
 
     return render_template('auth/login.html')
@@ -25,11 +27,22 @@ def signup():
         email = request.form['email']
         password = generate_password_hash(request.form['password'], method='sha256')
 
-        user = User(username=username, email=email, password=password)
-        db.session.add(user)
+        if Admin.query.filter_by(email=email).first():
+            flash('Email already exists!', 'danger')
+            return redirect(url_for('auth.signup'))
+
+        new_admin = Admin(username=username, email=email, password=password)
+        db.session.add(new_admin)
         db.session.commit()
 
-        flash('Signup successful! Please log in.', 'success')
+        flash('Admin account created successfully!', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/signup.html')
+
+@auth_bp.route('/logout', methods=['GET'])
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out successfully!', 'info')
+    return redirect(url_for('auth.login'))

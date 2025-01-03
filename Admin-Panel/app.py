@@ -1,18 +1,45 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, render_template
+from models import db, User, Proxy, Admin
+from flask_login import LoginManager
+
 from auth import auth_bp
 
 app = Flask(__name__)
 
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://username:password@localhost/proxy_management'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5433/ProxyManagement'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_secret_key'
 
-db = SQLAlchemy(app)
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
+
+login_manager = LoginManager(app)
+
+# Configure LoginManager
+login_manager.login_view = 'auth.login'
+login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'warning'
+
+
+@login_manager.user_loader
+def load_user(admin_id):
+    return Admin.query.get(admin_id)
+
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
+
+
+@app.route('/')
+def index():
+    num_users = User.query.count()
+    num_proxies = Proxy.query.count()
+    return render_template('dashboard.html', num_users=num_users, num_proxies=num_proxies)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

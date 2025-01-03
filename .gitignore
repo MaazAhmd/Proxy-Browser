@@ -5,3 +5,5 @@ venv/
 
 migrations/
 *zip
+
+__pycache__
