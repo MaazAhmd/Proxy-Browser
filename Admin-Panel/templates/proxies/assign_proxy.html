@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">Assign Proxy to User</h1>
+<form method="post">
+  <div class="mb-3">
+    <label for="proxy_id" class="form-label">Select Proxy</label>
+    <select class="form-select" id="proxy_id" name="proxy_id" required>
+      <option value="" disabled selected>Select a Proxy</option>
+      {% for proxy in proxies %}
+      <option value="{{ proxy.id }}">{{ proxy.username }} ({{ proxy.host }}:{{ proxy.port }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label for="user_id" class="form-label">Select User</label>
+    <select class="form-select" id="user_id" name="user_id" required>
+      <option value="" disabled selected>Select a User</option>
+      {% for user in users %}
+      <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary">Assign Proxy</button>
+</form>
+{% endblock %}

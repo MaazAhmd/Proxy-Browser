@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import os
 
 from auth import auth_bp
+from users import users_bp
+from proxy import proxies_bp
 
 app = Flask(__name__)
 
@@ -36,6 +38,8 @@ def load_user(admin_id):
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(users_bp, url_prefix='/users')
+app.register_blueprint(proxies_bp, url_prefix='/proxy')
 
 
 @app.route('/')

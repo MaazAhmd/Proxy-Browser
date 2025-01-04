@@ -16,7 +16,7 @@ class Admin(UserMixin, db.Model):
 
 
 class User(db.Model):
-    id = db.Column(db.String(64), primary_key=True)
+    id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)  # 32-character UUID
     username = db.Column(db.String(256), unique=True, nullable=False)
     email = db.Column(db.String(256), unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False)
@@ -24,7 +24,7 @@ class User(db.Model):
     
 
 class Proxy(db.Model):
-    id = db.Column(db.String(64), primary_key=True)
+    id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)  # 32-character UUID
     username = db.Column(db.String(256), unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False)
     host = db.Column(db.String(256), unique=True, nullable=False)

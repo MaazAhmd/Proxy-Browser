@@ -1,0 +1,28 @@
+{% extends "base.html" %} {% block content %}
+<h1 class="mb-4">List of Proxies</h1>
+
+<a href="{{ url_for('proxy.add_proxy') }}" class="btn btn-success mb-4">Add New Proxy</a>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Username</th>
+      <th>Host</th>
+      <th>Port</th>
+      <th>Assigned To</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for proxy in proxies %}
+    <tr>
+      <td>{{ proxy.id }}</td>
+      <td>{{ proxy.username }}</td>
+      <td>{{ proxy.host }}</td>
+      <td>{{ proxy.port }}</td>
+      <td>{{ proxy.assigned_to or 'Unassigned' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
