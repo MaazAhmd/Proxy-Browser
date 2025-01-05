@@ -1,4 +1,5 @@
 import re
+import requests
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -7,19 +8,82 @@ from PyQt5.QtWidgets import (
     QAction,
     QLineEdit,
     QMessageBox,
+    QDialog,
+    QVBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
 )
 from PyQt5.QtCore import QUrl, Qt
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEnginePage, QWebEngineProfile
 from PyQt5.QtGui import QIcon, QPixmap, QPainter
 from PyQt5.QtSvg import QSvgRenderer
-from PyQt5.QtNetwork import QNetworkCookieJar
-from PyQt5.QtNetwork import QNetworkProxy
-import requests
+from PyQt5.QtNetwork import QNetworkCookieJar, QNetworkProxy
 
-proxy_url = "gw.dataimpulse.com"
-proxy_port = 823
-proxy_user = "5cc85982d6b8f4731244"
-proxy_password = "5479abb73bb2a44d"
+# Global variables for proxy details
+proxy_url = None
+proxy_port = None
+proxy_user = None
+proxy_password = None
+
+class LoginDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Login")
+        self.setModal(True)
+        self.username = None
+        self.password = None
+
+        layout = QVBoxLayout()
+
+        self.username_label = QLabel("Username:")
+        self.username_input = QLineEdit()
+        layout.addWidget(self.username_label)
+        layout.addWidget(self.username_input)
+
+        self.password_label = QLabel("Password:")
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.Password)
+        layout.addWidget(self.password_label)
+        layout.addWidget(self.password_input)
+
+        self.login_button = QPushButton("Login")
+        self.login_button.clicked.connect(self.login)
+        layout.addWidget(self.login_button)
+
+        self.setLayout(layout)
+
+    def login(self):
+        self.username = self.username_input.text()
+        self.password = self.password_input.text()
+        proxy_details = self.get_proxy_details(self.username, self.password)
+        if proxy_details:
+            global proxy_url, proxy_port, proxy_user, proxy_password
+            proxy_url = proxy_details['proxy_url']
+            proxy_port = proxy_details['proxy_port']
+            proxy_user = proxy_details['proxy_user']
+            proxy_password = proxy_details['proxy_password']
+            self.accept()
+
+    def get_proxy_details(self, username, password):
+        """Call the API to get proxy details."""
+        api_url = "http://127.0.0.1:5000/proxy/get-proxy"
+        try:
+            response = requests.post(api_url, json={"username": username, "password": password})
+            if response.status_code == 200:
+                data = response.json()
+                if data['status'] == 1:
+                    return data['proxy_details']
+                else:
+                    QMessageBox.critical(self, "Login Failed", data['error_message'])
+                    return None
+            else:
+                QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
+                return None
+        except requests.RequestException as e:
+            print("Error calling API:", e)
+            QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
+            return None
 
 class CustomWebEnginePage(QWebEnginePage):
     """Custom QWebEnginePage for handling JavaScript and CSP issues."""
@@ -32,14 +96,17 @@ class CustomWebEnginePage(QWebEnginePage):
         print(f"Navigation Request: {url.toString()}")
         return super().acceptNavigationRequest(url, nav_type, is_main_frame)
 
-
 class SimpleBrowser(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Set up proxy
-        self.set_proxy()
-        print(f"Proxy set to {proxy_url}:{proxy_port}")
+        # Show login dialog
+        login_dialog = LoginDialog()
+        if login_dialog.exec_() == QDialog.Accepted:
+            self.set_proxy()
+            print(f"Proxy set to {proxy_url}:{proxy_port}")
+        else:
+            exit(1)
 
         # Browser Window Setup
         self.setWindowTitle("Simple Browser")
@@ -94,7 +161,7 @@ class SimpleBrowser(QMainWindow):
         proxy = QNetworkProxy()
         proxy.setType(QNetworkProxy.HttpProxy)
         proxy.setHostName(proxy_url)
-        proxy.setPort(proxy_port)
+        proxy.setPort(int(proxy_port))
         proxy.setUser(proxy_user)
         proxy.setPassword(proxy_password)
         QNetworkProxy.setApplicationProxy(proxy)
@@ -114,7 +181,6 @@ class SimpleBrowser(QMainWindow):
                 print("Failed to connect through proxy.")
         except requests.RequestException as e:
             print("Error connecting through proxy:", e)
-
 
     def new_tab(self):
         """Open a new tab in the tab widget."""
@@ -246,13 +312,10 @@ class SimpleBrowser(QMainWindow):
         # Show a confirmation message
         QMessageBox.information(self, "Data Cleared", "All browser data has been successfully cleared.")
 
-
 if __name__ == "__main__":
     app = QApplication([])
 
     browser = SimpleBrowser()
     browser.show()
-
-    browser.check_proxy()
 
     app.exec_()

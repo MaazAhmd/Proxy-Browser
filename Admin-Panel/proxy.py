@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from uuid import uuid4
 from models import db, Proxy, User
+from werkzeug.security import check_password_hash
 
 proxies_bp = Blueprint('proxy', __name__, url_prefix='/proxies')
 
@@ -72,3 +73,33 @@ def assign_proxy():
         return redirect(url_for('proxy.index'))
 
     return render_template('proxies/assign_proxy.html', users=users, proxies=proxies)
+
+
+@proxies_bp.route('/get-proxy', methods=['POST'])
+def get_proxy():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'status': 0, 'error_message': 'Username and password are required'}), 200
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'status': 0, 'error_message': 'Username not found'}), 200
+
+    if not check_password_hash(user.password, password):
+        return jsonify({'status': 0, 'error_message': 'Incorrect password'}), 200
+
+    proxy = Proxy.query.filter_by(assigned_to=user.id).first()
+    if not proxy:
+        return jsonify({'status': 0, 'error_message': 'No proxy assigned to this user'}), 200
+
+    proxy_details = {
+        'proxy_url': proxy.host,
+        'proxy_port': proxy.port,
+        'proxy_user': proxy.username,
+        'proxy_password': proxy.password
+    }
+
+    return jsonify({'status': 1, 'proxy_details': proxy_details, 'message': 'Login successful'}), 200
