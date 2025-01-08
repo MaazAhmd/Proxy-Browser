@@ -2,6 +2,8 @@ import re
 import os
 import sys
 import requests
+import jwt
+import datetime
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -23,6 +25,7 @@ from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtNetwork import QNetworkCookieJar, QNetworkProxy
 
 # Global variables for proxy details
+SECRET_KEY = 'QR2vZ7ocC7JkF0b02Kd7a5slN92MYgvd'
 proxy_url = None
 proxy_port = None
 proxy_user = None
@@ -121,11 +124,22 @@ class LoginDialog(QDialog):
             proxy_password = proxy_details['proxy_password']
             self.accept()
 
+    def generate_jwt(self):
+        """Generate a JWT token."""
+        payload = {
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+            'iat': datetime.datetime.utcnow()
+        }
+        token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+        return token
+
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
         api_url = "http://127.0.0.1:5000/proxy/get-proxy"
+        token = self.generate_jwt()
+        headers = {'x-access-token': token}
         try:
-            response = requests.post(api_url, json={"username": username, "password": password})
+            response = requests.post(api_url, json={"username": username, "password": password}, headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 if data['status'] == 1:

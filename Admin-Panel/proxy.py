@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from uuid import uuid4
 from models import db, Proxy, User
+import jwt
+import os
+from functools import wraps
 from werkzeug.security import check_password_hash
 
 proxies_bp = Blueprint('proxy', __name__, url_prefix='/proxies')
@@ -75,7 +78,25 @@ def assign_proxy():
     return render_template('proxies/assign_proxy.html', users=users, proxies=proxies)
 
 
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+        if not token:
+            return jsonify({'status': 0, 'error_message': 'Token is missing!'}), 401
+        try:
+            data = jwt.decode(token, os.getenv('TOKEN_SECRET_KEY'), algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({'status': 0, 'error_message': 'Token has expired!'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'status': 0, 'error_message': 'Invalid token!'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
 @proxies_bp.route('/get-proxy', methods=['POST'])
+@token_required
 def get_proxy():
     data = request.json
     username = data.get('username')
