@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models import db, User
 from werkzeug.security import generate_password_hash
+from datetime import datetime, timedelta
 
 users_bp = Blueprint('users', __name__, url_prefix='/users')
 
@@ -9,18 +10,27 @@ users_bp = Blueprint('users', __name__, url_prefix='/users')
 def index():
     search_query = request.args.get('search', '')
     if search_query:
-        users = User.query.filter(User.username.ilike(f'%{search_query}%')).all()
+        users = User.query.filter(User.username.ilike(f'%{search_query}%')).filter(User.group_id == None).all()
     else:
-        users = User.query.all()
+        users = User.query.filter(User.group_id == None).all()
     return render_template('users/index.html', users=users, search_query=search_query)
 
-# Add a new user
+@users_bp.route('/list', methods=['GET'])
+def list_users():
+    users = User.query.filter(User.group_id == None).all()
+    return render_template('users/list_users.html', users=users)
+
 @users_bp.route('/add', methods=['GET', 'POST'])
 def add_user():
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
+        days = int(request.form['active_days'])
+        hours = int(request.form['active_hours'])
+        
+        # Calculate the disabled_after datetime
+        disabled_after = datetime.utcnow() + timedelta(days=days, hours=hours)
 
         # Validate input
         if not username or not email or not password:
@@ -28,16 +38,21 @@ def add_user():
             return redirect(url_for('users.add_user'))
 
         # Hash the password
-        hashed_password = generate_password_hash(request.form['password'], method='pbkdf2:sha256')
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
-
-        new_user = User(username=username, email=email, password=hashed_password)
+        new_user = User(
+            username=username,
+            email=email,
+            password=hashed_password,
+            disabled_after=disabled_after
+        )
         db.session.add(new_user)
         db.session.commit()
 
         flash('User added successfully!', 'success')
-        return redirect(url_for('users.index'))
+        return redirect(url_for('users.list_users'))
     return render_template('users/add_user.html')
+
 
 # Edit user details
 @users_bp.route('/edit/<string:user_id>', methods=['GET', 'POST'])

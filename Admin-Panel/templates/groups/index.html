@@ -1,0 +1,33 @@
+{% extends "base.html" %} {% block content %}
+<h1 class="mb-4">User Groups</h1>
+
+<div class="d-flex justify-content-between mb-3">
+  <a href="{{ url_for('groups.add_group') }}" class="btn btn-primary"
+    >Add Group</a
+  >
+</div>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Group Name</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for group in groups %}
+    <tr>
+      <td>{{ group.name }}</td>
+      <td>
+        <a
+          href="{{ url_for('groups.group_users', group_id=group.id) }}"
+          class="btn btn-info btn-sm"
+        >
+          View Users
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
