@@ -1,4 +1,6 @@
 import re
+import os
+import sys
 import requests
 from PyQt5.QtWidgets import (
     QApplication,
@@ -31,27 +33,81 @@ class LoginDialog(QDialog):
         super().__init__()
         self.setWindowTitle("Login")
         self.setModal(True)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.username = None
         self.password = None
-
+        self.setFixedSize(400, 400)
         layout = QVBoxLayout()
+        if hasattr(sys, '_MEIPASS'):
+            assets_path = os.path.join(sys._MEIPASS, 'assets')
+        else:
+            assets_path = os.path.join(os.path.dirname(__file__), 'assets')
 
+        self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
+        # Add logo at the top
+        self.logo_label = QLabel(self)
+        self.logo_pixmap = QPixmap(os.path.join(assets_path, "logo.png"))
+        self.logo_pixmap = self.logo_pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.logo_label.setPixmap(self.logo_pixmap)
+        self.logo_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.logo_label)
+
+        # Username input
         self.username_label = QLabel("Username:")
-        self.username_input = QLineEdit()
+        self.username_input = QLineEdit("afnan")
         layout.addWidget(self.username_label)
         layout.addWidget(self.username_input)
 
+        # Password input
         self.password_label = QLabel("Password:")
-        self.password_input = QLineEdit()
+        self.password_input = QLineEdit("123456")
         self.password_input.setEchoMode(QLineEdit.Password)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
 
+        # Login button
         self.login_button = QPushButton("Login")
         self.login_button.clicked.connect(self.login)
+        self.login_button.setCursor(Qt.PointingHandCursor)
         layout.addWidget(self.login_button)
-
+        self.contact_label = QLabel("In case of issues, contact the administrator at: 03204342479")
+        self.contact_label.setObjectName("contactLabel")
+        self.contact_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        layout.addWidget(self.contact_label)
         self.setLayout(layout)
+
+        # Apply CSS styling
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #f0f0f0;
+                border-radius: 10px;
+            }
+            QLabel {
+                font-size: 14px;
+                color: #333;
+            }
+            QLineEdit {
+                padding: 8px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                font-size: 14px;
+            }
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px;
+                border: none;
+                border-radius: 5px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+             QLabel#contactLabel {
+                margin-top: 50px;
+                margin-bottom: 10px;
+            }
+        """)
 
     def login(self):
         self.username = self.username_input.text()
@@ -106,8 +162,13 @@ class SimpleBrowser(QMainWindow):
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
         else:
-            exit(1)
+            sys.exit()
+        if hasattr(sys, '_MEIPASS'):
+            assets_path = os.path.join(sys._MEIPASS, 'assets')
+        else:
+            assets_path = os.path.join(os.path.dirname(__file__), 'assets')
 
+        self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Browser Window Setup
         self.setWindowTitle("Simple Browser")
         self.resize(1280, 800)
@@ -152,6 +213,58 @@ class SimpleBrowser(QMainWindow):
         self.search_bar.setPlaceholderText("Enter URL or Web Address")
         self.search_bar.returnPressed.connect(self.open_url)
         navbar.addWidget(self.search_bar)
+
+        # Apply CSS styling
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #f5f5f5;
+            }
+            QTabWidget::pane {
+                border-top: 2px solid #C2C2C2;
+                background-color: #f5f5f5;
+            }
+            QTabBar::tab {
+                background: #e0e0e0;
+                border: 1px solid #C4C4C3;
+                border-bottom-color: #C2C2C2;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                min-width: 100px;
+                padding: 5px;
+                margin: 2px;
+            }
+            QTabBar::tab:selected, QTabBar::tab:hover {
+                background: #f0f0f0;
+                border-color: #A0A0A0;
+            }
+            QTabBar::tab:selected {
+                font-weight: bold;
+            }
+            QToolBar {
+                background: #ffffff;
+                border: none;
+                padding: 5px;
+            }
+            QToolBar QToolButton {
+                background: #e0e0e0;
+                border: none;
+                border-radius: 16px;
+                padding: 5px;
+                margin: 2px;
+            }
+            QToolBar QToolButton:hover {
+                background: #d0d0d0;
+            }
+            QLineEdit {
+                background: #ffffff;
+                border: 1px solid #C4C4C3;
+                border-radius: 5px;
+                padding: 5px;
+                margin-left: 10px;
+                margin-right: 10px;
+                font-size: 14px;
+            }
+        """)
 
         # Open a new tab when the browser starts
         self.new_tab()

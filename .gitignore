@@ -7,3 +7,6 @@ migrations/
 *zip
 
 __pycache__
+
+build/
+dist/
