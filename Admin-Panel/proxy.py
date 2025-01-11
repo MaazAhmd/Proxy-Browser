@@ -9,6 +9,9 @@ from models import db, Proxy, User
 import jwt
 import os
 from functools import wraps
+import jwt
+import os
+from functools import wraps
 from models import db, Proxy, User, Group
 from werkzeug.security import check_password_hash
 
@@ -199,6 +202,23 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated
 
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+        if not token:
+            return jsonify({'status': 0, 'error_message': 'Token is missing!'}), 401
+        try:
+            data = jwt.decode(token, os.getenv('TOKEN_SECRET_KEY'), algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({'status': 0, 'error_message': 'Token has expired!'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'status': 0, 'error_message': 'Invalid token!'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 @proxies_bp.route('/get-proxy', methods=['POST'])
 @token_required
