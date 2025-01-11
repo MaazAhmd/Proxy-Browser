@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, flash, redirect, url_for
 from sqlalchemy import TEXT, text
 from models import db, User, Proxy, Admin
 from flask_login import LoginManager, login_required
@@ -57,6 +57,18 @@ def index():
     num_proxies = Proxy.query.count()
     return render_template('dashboard.html', num_users=num_users, num_proxies=num_proxies, page='dashboard')
 
+
+# Generic error handler for all exceptions
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Log the exception details
+    # app.logger.error(f"Unhandled Exception: {e}", exc_info=True)
+
+    # Flash a generic error message
+    flash("An unexpected error occurred. Please contact support if this continues.", "danger")
+
+    # Redirect to a safe page (e.g., home page)
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)

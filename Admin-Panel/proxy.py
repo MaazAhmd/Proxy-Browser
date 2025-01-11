@@ -76,9 +76,9 @@ def edit_proxy(proxy_id):
         port = request.form.get('port')
 
         # Validate input
-        if not username or not password or not host or not port:
+        if not username or not host or not port:
             flash('All fields are required!', 'danger')
-            return redirect(url_for('proxies.edit_proxy', proxy_id=proxy_id))
+            return redirect(url_for('proxy.edit_proxy', proxy_id=proxy_id))
 
         # Check for unique constraints (excluding the current proxy being edited)
         existing_proxy = Proxy.query.filter(
@@ -90,18 +90,19 @@ def edit_proxy(proxy_id):
 
         if existing_proxy:
             flash('Proxy details must be unique!', 'danger')
-            return redirect(url_for('proxies.edit_proxy', proxy_id=proxy_id))
+            return redirect(url_for('proxy.edit_proxy', proxy_id=proxy_id))
 
         # Update proxy details
         proxy.username = username
-        proxy.password = password
+        if password:
+            proxy.password = password
         proxy.host = host
         proxy.port = port
 
         db.session.commit()
 
         flash('Proxy updated successfully!', 'success')
-        return redirect(url_for('proxies.index'))
+        return redirect(url_for('proxy.index'))
 
     return render_template('proxies/edit_proxy.html', proxy=proxy, page='proxies')
 
@@ -119,7 +120,7 @@ def delete_proxy(proxy_id):
         db.session.rollback()
         flash(f'Error deleting proxy: {e}', 'danger')
 
-    return redirect(url_for('proxies.index'))
+    return redirect(url_for('proxy.index'))
 
 
 @proxies_bp.route('/assign', methods=['GET', 'POST'])
