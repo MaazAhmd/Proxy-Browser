@@ -2,6 +2,8 @@ import re
 import os
 import sys
 import requests
+import jwt
+import datetime
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -23,6 +25,7 @@ from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtNetwork import QNetworkCookieJar, QNetworkProxy
 
 # Global variables for proxy details
+SECRET_KEY = 'QR2vZ7ocC7JkF0b02Kd7a5slN92MYgvd'
 proxy_url = None
 proxy_port = None
 proxy_user = None
@@ -54,13 +57,13 @@ class LoginDialog(QDialog):
 
         # Username input
         self.username_label = QLabel("Username:")
-        self.username_input = QLineEdit("afnan")
+        self.username_input = QLineEdit("")
         layout.addWidget(self.username_label)
         layout.addWidget(self.username_input)
 
         # Password input
         self.password_label = QLabel("Password:")
-        self.password_input = QLineEdit("123456")
+        self.password_input = QLineEdit("")
         self.password_input.setEchoMode(QLineEdit.Password)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
@@ -121,11 +124,22 @@ class LoginDialog(QDialog):
             proxy_password = proxy_details['proxy_password']
             self.accept()
 
+    def generate_jwt(self):
+        """Generate a JWT token."""
+        payload = {
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+            'iat': datetime.datetime.utcnow()
+        }
+        token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+        return token
+
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
         api_url = "http://127.0.0.1:5000/proxy/get-proxy"
+        token = self.generate_jwt()
+        headers = {'x-access-token': token}
         try:
-            response = requests.post(api_url, json={"username": username, "password": password})
+            response = requests.post(api_url, json={"username": username, "password": password}, headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 if data['status'] == 1:
@@ -300,7 +314,7 @@ class SimpleBrowser(QMainWindow):
         # Create a new WebEngineView for the tab
         browser_view = QWebEngineView()
         browser_view.setPage(CustomWebEnginePage(browser_view))  # Use custom page
-        browser_view.setUrl(QUrl("https://www.google.com"))  # Start with Google
+        browser_view.setUrl(QUrl("https://espotsolutions.com/"))  # Start with Google
 
         # Enable JavaScript and adjust settings for compatibility
         browser_view.settings().setAttribute(QWebEngineSettings.JavascriptEnabled, True)

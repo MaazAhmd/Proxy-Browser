@@ -7,10 +7,12 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    new_admin = Admin(username='admin', email='ghaffardar382@gmail.com', password='<PASSWORD>')
+
     if request.method == 'POST':
-        email = request.form['email']
+        username = request.form['username']
         password = request.form['password']
-        admin = Admin.query.filter_by(email=email).first()
+        admin = Admin.query.filter_by(username=username).first()
 
         if admin and admin.verify_password(password):
             login_user(admin)
@@ -19,26 +21,26 @@ def login():
         flash('Invalid credentials', 'danger')
 
     return render_template('auth/login.html')
-
-@auth_bp.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = generate_password_hash(request.form['password'], method='sha256')
-
-        if Admin.query.filter_by(email=email).first():
-            flash('Email already exists!', 'danger')
-            return redirect(url_for('auth.signup'))
-
-        new_admin = Admin(username=username, email=email, password=password)
-        db.session.add(new_admin)
-        db.session.commit()
-
-        flash('Admin account created successfully!', 'success')
-        return redirect(url_for('auth.login'))
-
-    return render_template('auth/signup.html')
+#
+# @auth_bp.route('/signup', methods=['GET', 'POST'])
+# def signup():
+#     if request.method == 'POST':
+#         username = request.form['username']
+#         email = request.form['email']
+#         password = generate_password_hash(request.form['password'], method='sha256')
+#
+#         if Admin.query.filter_by(email=email).first():
+#             flash('Email already exists!', 'danger')
+#             return redirect(url_for('auth.signup'))
+#
+#         new_admin = Admin(username=username, email=email, password=password)
+#         db.session.add(new_admin)
+#         db.session.commit()
+#
+#         flash('Admin account created successfully!', 'success')
+#         return redirect(url_for('auth.login'))
+#
+#     return render_template('auth/signup.html')
 
 @auth_bp.route('/logout', methods=['GET'])
 @login_required

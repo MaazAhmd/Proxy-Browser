@@ -22,9 +22,26 @@
         <a
           href="{{ url_for('groups.group_users', group_id=group.id) }}"
           class="btn btn-info btn-sm"
+          >View Users</a
         >
-          View Users
-        </a>
+        <a
+          href="{{ url_for('groups.edit_group', group_id=group.id) }}"
+          class="btn btn-warning btn-sm"
+          >Edit</a
+        >
+        <form
+          method="post"
+          action="{{ url_for('groups.delete_group', group_id=group.id) }}"
+          style="display: inline"
+        >
+          <button
+            type="submit"
+            class="btn btn-danger btn-sm"
+            onclick="return confirm('Are you sure you want to delete this group?');"
+          >
+            Delete
+          </button>
+        </form>
       </td>
     </tr>
     {% endfor %}

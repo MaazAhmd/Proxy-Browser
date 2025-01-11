@@ -1,6 +1,7 @@
 from flask import Flask, render_template
+from sqlalchemy import TEXT, text
 from models import db, User, Proxy, Admin
-from flask_login import LoginManager
+from flask_login import LoginManager, login_required
 from dotenv import load_dotenv
 import os
 from flask_migrate import Migrate
@@ -23,7 +24,10 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 with app.app_context():
+    # db.session.execute(text('SET session_replication_role = replica;'))  # PostgreSQL
+    # db.drop_all()
     db.create_all()
+    # db.session.execute('SET session_replication_role = DEFAULT;')  # PostgreSQL
 
 
 login_manager = LoginManager(app)
@@ -47,10 +51,11 @@ app.register_blueprint(groups_bp, url_prefix='/groups')
 
 
 @app.route('/')
+@login_required
 def index():
     num_users = User.query.count()
     num_proxies = Proxy.query.count()
-    return render_template('dashboard.html', num_users=num_users, num_proxies=num_proxies)
+    return render_template('dashboard.html', num_users=num_users, num_proxies=num_proxies, page='dashboard')
 
 
 if __name__ == '__main__':

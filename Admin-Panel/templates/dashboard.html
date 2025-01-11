@@ -22,10 +22,7 @@
 <div class="row">
   <!-- Manage Users -->
   <div class="col-md-4 d-flex">
-    <a
-      href="{{ url_for('users.index') }}"
-      class="text-decoration-none w-100"
-    >
+    <a href="{{ url_for('users.index') }}" class="text-decoration-none w-100">
       <div class="card shadow-sm border-0 hover-card h-100">
         <div
           class="card-body text-center d-flex flex-column align-items-center justify-content-center"
@@ -55,26 +52,6 @@
     </a>
   </div>
 
-  <!-- Assign Proxies -->
-  <div class="col-md-4 d-flex">
-    <a href="{{ url_for('proxy.assign_proxy') }}" class="text-decoration-none w-100">
-      <div class="card shadow-sm border-0 hover-card h-100">
-        <div
-          class="card-body text-center d-flex flex-column align-items-center justify-content-center"
-        >
-          <i class="fas fa-random fa-3x text-warning mb-3"></i>
-          <h5 class="card-title">Assign Proxies</h5>
-          <p class="card-text">Assign or unassign proxies to users.</p>
-        </div>
-      </div>
-    </a>
-  </div>
-</div>
-
-
-
-<div class="row mt-3">
-  <!-- Manage User Groups -->
   <div class="col-md-4 d-flex">
     <a
       href="{{ url_for('groups.list_groups') }}"
@@ -91,7 +68,46 @@
       </div>
     </a>
   </div>
+</div>
 
+<div class="row mt-3">
+  <!-- Assign Proxies -->
+  <div class="col-md-4 d-flex">
+    <a
+      href="{{ url_for('proxy.assign_proxy') }}"
+      class="text-decoration-none w-100"
+    >
+      <div class="card shadow-sm border-0 hover-card h-100">
+        <div
+          class="card-body text-center d-flex flex-column align-items-center justify-content-center"
+        >
+          <i class="fas fa-random fa-3x text-warning mb-3"></i>
+          <h5 class="card-title">Assign Proxies to individual users</h5>
+          <p class="card-text">Assign or unassign proxies to users.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Assign Proxies to Groups -->
+  <div class="col-md-4 d-flex">
+    <a
+      href="{{ url_for('proxy.assign_proxy_group') }}"
+      class="text-decoration-none w-100"
+    >
+      <div class="card shadow-sm border-0 hover-card h-100">
+        <div
+          class="card-body text-center d-flex flex-column align-items-center justify-content-center"
+        >
+          <i class="fas fa-random fa-3x text-warning mb-3"></i>
+          <h5 class="card-title">Assign Proxies to Groups</h5>
+          <p class="card-text">
+            Assign or unassign proxies to users in a group.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
 </div>
 
 <style>
