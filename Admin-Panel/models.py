@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 db = SQLAlchemy()
 
 class Admin(UserMixin, db.Model):
-    id = db.Column(db.String(64), primary_key=True)
+    id = db.Column(db.String(64), primary_key=True, default=lambda: uuid4().hex)
     username = db.Column(db.String(256), unique=True, nullable=False)
     email = db.Column(db.String(256), unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False)

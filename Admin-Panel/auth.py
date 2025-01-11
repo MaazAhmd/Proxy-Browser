@@ -7,8 +7,6 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    new_admin = Admin(username='admin', email='ghaffardar382@gmail.com', password='<PASSWORD>')
-
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -27,7 +25,7 @@ def login():
 #     if request.method == 'POST':
 #         username = request.form['username']
 #         email = request.form['email']
-#         password = generate_password_hash(request.form['password'], method='sha256')
+#         password = generate_password_hash(request.form['password'], method='pbkdf2:sha256')
 #
 #         if Admin.query.filter_by(email=email).first():
 #             flash('Email already exists!', 'danger')
