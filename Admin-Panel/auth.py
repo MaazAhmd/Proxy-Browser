@@ -13,7 +13,7 @@ def login():
     if not admins:
         new_admin = Admin(
             username = os.getenv('ADMIN_USERNAME'),
-            password = os.getenv('ADMIN_PASSWORD'),
+            password = generate_password_hash(os.getenv('ADMIN_PASSWORD')),
             email = os.getenv('ADMIN_EMAIL')
         )
         db.session.add(new_admin)
