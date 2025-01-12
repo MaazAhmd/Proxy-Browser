@@ -238,12 +238,12 @@ def get_proxy():
         return jsonify({'status': 0, 'error_message': 'Incorrect password'}), 200
 
     if user.disabled:
-        return jsonify({'status': 0, 'error_message': 'User Expired'}), 200
+        return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Espot Solutions.'}), 200
 
     if user.disabled_after <= datetime.now():
         user.disabled = True
         db.session.commit()
-        return jsonify({'status': 0, 'error_message': 'User Expired'}), 200
+        return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Espot Solutions.'}), 200
 
     if not user.proxy_id :
         return jsonify({'status': 0, 'error_message': 'No proxy assigned to this user'}), 200
@@ -256,7 +256,8 @@ def get_proxy():
         'proxy_url': proxy.host,
         'proxy_port': proxy.port,
         'proxy_user': proxy.username,
-        'proxy_password': proxy.password
+        'proxy_password': proxy.password,
+        'disabled_after': user.disabled_after
     }
 
     return jsonify({'status': 1, 'proxy_details': proxy_details, 'message': 'Login successful'}), 200

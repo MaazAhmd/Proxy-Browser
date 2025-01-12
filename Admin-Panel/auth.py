@@ -12,7 +12,7 @@ def login():
         password = request.form['password']
         admin = Admin.query.filter_by(username=username).first()
 
-        if admin and admin.verify_password(password):
+        if admin and admin.password == password:
             login_user(admin)
             flash('Logged in successfully!', 'success')
             return redirect(url_for('index'))

@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QPushButton,
 )
-from PyQt5.QtCore import QUrl, Qt
+from PyQt5.QtCore import QUrl, Qt, QTimer, QDateTime
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEnginePage, QWebEngineProfile
 from PyQt5.QtGui import QIcon, QPixmap, QPainter
 from PyQt5.QtSvg import QSvgRenderer
@@ -39,6 +39,7 @@ class LoginDialog(QDialog):
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.username = None
         self.password = None
+        self.disabled_after = None
         self.setFixedSize(400, 400)
         layout = QVBoxLayout()
         if hasattr(sys, '_MEIPASS'):
@@ -122,6 +123,7 @@ class LoginDialog(QDialog):
             proxy_port = proxy_details['proxy_port']
             proxy_user = proxy_details['proxy_user']
             proxy_password = proxy_details['proxy_password']
+            self.disabled_after = proxy_details['disabled_after']
             self.accept()
 
     def generate_jwt(self):
@@ -155,12 +157,37 @@ class LoginDialog(QDialog):
             QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
             return None
 
+    def start_session_timer(self):
+        """Start a timer to check session expiration every minute."""
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.check_session_expiration)
+        self.timer.start(10000)  # Check every 60 seconds
+
+    def check_session_expiration(self):
+        """Check if the session has expired."""
+        print("Checking session expiration...")
+        if self.disabled_after and QDateTime.currentDateTime() > QDateTime.fromString(self.disabled_after, Qt.ISODate):
+            print("Session expired.")
+            self.timer.stop()
+            QMessageBox.warning(self, "Session Expired", "Your session has expired.")
+            self.close()
+            self.show_login_dialog()
+
+    def show_login_dialog(self):
+        """Show the login dialog."""
+        login_dialog = LoginDialog()
+        if login_dialog.exec_() == QDialog.Accepted:
+            self.set_proxy()
+            print(f"Proxy set to {proxy_url}:{proxy_port}")
+        else:
+            sys.exit(1)
+
 class CustomWebEnginePage(QWebEnginePage):
     """Custom QWebEnginePage for handling JavaScript and CSP issues."""
     def javaScriptConsoleMessage(self, level, message, line, source):
         """Log JavaScript console messages for debugging."""
         print(f"JS Console: {message} (line {line}, source {source})")
-    
+
     def acceptNavigationRequest(self, url, nav_type, is_main_frame):
         """Accept or deny navigation requests."""
         print(f"Navigation Request: {url.toString()}")
@@ -175,8 +202,10 @@ class SimpleBrowser(QMainWindow):
         if login_dialog.exec_() == QDialog.Accepted:
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
+            self.disabled_after = login_dialog.disabled_after  # Store the disabled_after value
+            self.start_session_timer()
         else:
-            sys.exit()
+            sys.exit(1)
         if hasattr(sys, '_MEIPASS'):
             assets_path = os.path.join(sys._MEIPASS, 'assets')
         else:
