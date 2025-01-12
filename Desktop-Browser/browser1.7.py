@@ -34,13 +34,13 @@ proxy_password = None
 class LoginDialog(QDialog):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Login")
+        self.setWindowTitle("Espot Browser")
         self.setModal(True)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.username = None
         self.password = None
         self.disabled_after = None
-        self.setFixedSize(400, 400)
+        self.setFixedSize(400, 450)
         layout = QVBoxLayout()
         if hasattr(sys, '_MEIPASS'):
             assets_path = os.path.join(sys._MEIPASS, 'assets')
@@ -55,16 +55,23 @@ class LoginDialog(QDialog):
         self.logo_label.setPixmap(self.logo_pixmap)
         self.logo_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.logo_label)
-
+        self.tagline_label = QLabel("Your Gateway to Business Excellence")
+        self.tagline_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.tagline_label)
+        self.phone_label = QLabel("03204342479")
+        self.phone_label.setCursor(Qt.IBeamCursor)
+        self.phone_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.phone_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.phone_label)
         # Username input
         self.username_label = QLabel("Username:")
-        self.username_input = QLineEdit("")
+        self.username_input = QLineEdit()
         layout.addWidget(self.username_label)
         layout.addWidget(self.username_input)
 
         # Password input
         self.password_label = QLabel("Password:")
-        self.password_input = QLineEdit("")
+        self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
@@ -74,7 +81,8 @@ class LoginDialog(QDialog):
         self.login_button.clicked.connect(self.login)
         self.login_button.setCursor(Qt.PointingHandCursor)
         layout.addWidget(self.login_button)
-        self.contact_label = QLabel("In case of issues, contact the administrator at: 03204342479")
+        self.contact_label = QLabel("In case of issues, contact Espot Solutions at: 03204342479")
+        self.contact_label.setCursor(Qt.IBeamCursor)
         self.contact_label.setObjectName("contactLabel")
         self.contact_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         layout.addWidget(self.contact_label)
@@ -213,7 +221,7 @@ class SimpleBrowser(QMainWindow):
 
         self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Browser Window Setup
-        self.setWindowTitle("Simple Browser")
+        self.setWindowTitle("Espot Browser")
         self.resize(1280, 800)
 
         # Tab Widget to manage multiple tabs
