@@ -165,31 +165,6 @@ class LoginDialog(QDialog):
             QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
             return None
 
-    def start_session_timer(self):
-        """Start a timer to check session expiration every minute."""
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.check_session_expiration)
-        self.timer.start(10000)  # Check every 60 seconds
-
-    def check_session_expiration(self):
-        """Check if the session has expired."""
-        print("Checking session expiration...")
-        if self.disabled_after and QDateTime.currentDateTime() > QDateTime.fromString(self.disabled_after, Qt.ISODate):
-            print("Session expired.")
-            self.timer.stop()
-            QMessageBox.warning(self, "Session Expired", "Your session has expired.")
-            self.close()
-            self.show_login_dialog()
-
-    def show_login_dialog(self):
-        """Show the login dialog."""
-        login_dialog = LoginDialog()
-        if login_dialog.exec_() == QDialog.Accepted:
-            self.set_proxy()
-            print(f"Proxy set to {proxy_url}:{proxy_port}")
-        else:
-            sys.exit(1)
-
 class CustomWebEnginePage(QWebEnginePage):
     """Custom QWebEnginePage for handling JavaScript and CSP issues."""
     def javaScriptConsoleMessage(self, level, message, line, source):
@@ -319,6 +294,37 @@ class SimpleBrowser(QMainWindow):
 
         # Open a new tab when the browser starts
         self.new_tab()
+    def start_session_timer(self):
+        """Start a timer to check session expiration every minute."""
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.check_session_expiration)
+        self.timer.start(10000)  # Check every 10 seconds
+
+    def check_session_expiration(self):
+        """Check if the session has expired or is about to expire."""
+        current_time = QDateTime.currentDateTime()
+        expiration_time = QDateTime.fromString(self.disabled_after, Qt.ISODate)
+
+        if self.disabled_after:
+            time_left = current_time.secsTo(expiration_time)
+
+            if time_left <= 0:
+                self.timer.stop()
+                QMessageBox.warning(self, "Session Expired", "Your session has expired.")
+                self.close()
+                self.show_login_dialog()
+            elif time_left <= 300:
+                QMessageBox.warning(self, "Session Expiring Soon", "Your session will expire in 5 minutes. Please save your work.")
+
+    def show_login_dialog(self):
+        """Show the login dialog."""
+        login_dialog = LoginDialog()
+        if login_dialog.exec_() == QDialog.Accepted:
+            self.set_proxy()
+            print(f"Proxy set to {proxy_url}:{proxy_port}")
+        else:
+            sys.exit(1)
+
 
     def set_proxy(self):
         """Set up the proxy for the browser."""

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required
 
 from models import db, User, Proxy
@@ -25,6 +25,7 @@ def index():
         ).order_by(User.username.asc()).all()
 
     for user in users:
+        # print(user.disabled_after, datetime.now())
         if user.disabled_after and user.disabled_after <= datetime.now():
             user.disabled = True
     db.session.commit()
@@ -130,14 +131,16 @@ def edit_user(user_id):
 @login_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
+    user_group_id = user.group_id
     db.session.delete(user)
     db.session.commit()
 
     flash('User deleted successfully!', 'success')
-    return redirect(url_for('users.index'))
 
+    if not user.group_id:
+        return redirect(url_for('users.index'))
 
-from flask import jsonify, request
+    return redirect(url_for('groups.group_users', group_id=user.group_id))
 
 
 @users_bp.route('/suspend_user', methods=['POST'])

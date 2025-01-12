@@ -1,3 +1,5 @@
+import os
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, current_user, login_required
 from models import db, Admin
@@ -7,6 +9,16 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    admins = Admin.query.all()
+    if not admins:
+        new_admin = Admin(
+            username = os.getenv('ADMIN_USERNAME'),
+            password = generate_password_hash(os.getenv('ADMIN_PASSWORD')),
+            email = os.getenv('ADMIN_EMAIL')
+        )
+        db.session.add(new_admin)
+        db.session.commit()
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']

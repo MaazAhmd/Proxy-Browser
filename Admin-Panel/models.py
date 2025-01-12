@@ -52,7 +52,7 @@ class Proxy(db.Model):
     host = db.Column(db.String(256), nullable=False)
     port = db.Column(db.String(16), nullable=False)
     
-    assigned_to_users = db.relationship('User', back_populates='proxy', cascade="all, delete-orphan")
+    assigned_to_users = db.relationship('User', back_populates='proxy')
     
     
 class Group(db.Model):
