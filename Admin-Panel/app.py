@@ -59,10 +59,10 @@ def index():
 
 
 # Generic error handler for all exceptions
-@app.errorhandler(Exception)
+@app.errorhandler(500)
 def handle_exception(e):
     # Log the exception details
-    # app.logger.error(f"Unhandled Exception: {e}", exc_info=True)
+    print(f"Unhandled Exception: {e}")
 
     # Flash a generic error message
     flash("An unexpected error occurred. Please contact support if this continues.", "danger")

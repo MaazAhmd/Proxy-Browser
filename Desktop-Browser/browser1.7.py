@@ -17,6 +17,8 @@ from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QHBoxLayout,
+    QWidget
 )
 from PyQt5.QtCore import QUrl, Qt, QTimer, QDateTime
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEnginePage, QWebEngineProfile
@@ -30,6 +32,7 @@ proxy_url = None
 proxy_port = None
 proxy_user = None
 proxy_password = None
+
 
 class LoginDialog(QDialog):
     def __init__(self):
@@ -125,6 +128,7 @@ class LoginDialog(QDialog):
         self.username = self.username_input.text()
         self.password = self.password_input.text()
         proxy_details = self.get_proxy_details(self.username, self.password)
+        print(proxy_details)
         if proxy_details:
             global proxy_url, proxy_port, proxy_user, proxy_password
             proxy_url = proxy_details['proxy_url']
@@ -145,11 +149,13 @@ class LoginDialog(QDialog):
 
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
-        api_url = "http://127.0.0.1:5000/proxy/get-proxy"
+        api_url = "https://espotbrowser.onrender.com/proxy/get-proxy"
         token = self.generate_jwt()
         headers = {'x-access-token': token}
         try:
             response = requests.post(api_url, json={"username": username, "password": password}, headers=headers)
+            print("Status Code:", response.status_code)
+            print("Response Text:", response.text)
             if response.status_code == 200:
                 data = response.json()
                 if data['status'] == 1:
@@ -165,8 +171,10 @@ class LoginDialog(QDialog):
             QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
             return None
 
+
 class CustomWebEnginePage(QWebEnginePage):
     """Custom QWebEnginePage for handling JavaScript and CSP issues."""
+
     def javaScriptConsoleMessage(self, level, message, line, source):
         """Log JavaScript console messages for debugging."""
         print(f"JS Console: {message} (line {line}, source {source})")
@@ -175,6 +183,7 @@ class CustomWebEnginePage(QWebEnginePage):
         """Accept or deny navigation requests."""
         print(f"Navigation Request: {url.toString()}")
         return super().acceptNavigationRequest(url, nav_type, is_main_frame)
+
 
 class SimpleBrowser(QMainWindow):
     def __init__(self):
@@ -200,10 +209,15 @@ class SimpleBrowser(QMainWindow):
         self.resize(1280, 800)
 
         # Tab Widget to manage multiple tabs
+        # Modify Tab Widget to add a "+" button
         self.tabs = QTabWidget(self)
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
+        self.tabs.setMovable(True)  # Allow rearranging tabs
         self.setCentralWidget(self.tabs)
+
+        # Add "+" button to the tab bar
+        self.add_new_tab_button()
 
         # Navigation bar (Back, Forward, Reload buttons)
         navbar = QToolBar("Navigation")
@@ -294,6 +308,29 @@ class SimpleBrowser(QMainWindow):
 
         # Open a new tab when the browser starts
         self.new_tab()
+
+    def add_new_tab_button(self):
+        """Add a '+' button right next to the tabs on the right side."""
+        # Create a layout for the custom tab bar
+        custom_tab_bar_layout = QHBoxLayout()
+        custom_tab_bar_layout.setContentsMargins(0, 0, 0, 0)  # No margin
+
+        # Add the "+" button
+        new_tab_button = QPushButton("+", self)
+        new_tab_button.setFixedSize(30, 30)
+        new_tab_button.setCursor(Qt.PointingHandCursor)
+        new_tab_button.clicked.connect(self.new_tab)
+
+        # Add the "+" button to the layout
+        custom_tab_bar_layout.addWidget(new_tab_button, alignment=Qt.AlignRight)  # Align button to the right
+
+        # Create a custom widget to hold the layout
+        custom_widget = QWidget()
+        custom_widget.setLayout(custom_tab_bar_layout)
+
+        # Add the custom widget to the tab bar
+        self.tabs.setCornerWidget(custom_widget, Qt.TopRightCorner)
+
     def start_session_timer(self):
         """Start a timer to check session expiration every minute."""
         self.timer = QTimer(self)
@@ -303,10 +340,13 @@ class SimpleBrowser(QMainWindow):
     def check_session_expiration(self):
         """Check if the session has expired or is about to expire."""
         current_time = QDateTime.currentDateTime()
-        expiration_time = QDateTime.fromString(self.disabled_after, Qt.ISODate)
+        expiration_time = QDateTime.fromString(self.disabled_after, "ddd, dd MMM yyyy HH:mm:ss 'GMT'")
+        print(f"self.disabled_after: {self.disabled_after}")
+        print(expiration_time)
 
         if self.disabled_after:
             time_left = current_time.secsTo(expiration_time)
+            print(time_left)
 
             if time_left <= 0:
                 self.timer.stop()
@@ -314,7 +354,8 @@ class SimpleBrowser(QMainWindow):
                 self.close()
                 self.show_login_dialog()
             elif time_left <= 300:
-                QMessageBox.warning(self, "Session Expiring Soon", "Your session will expire in 5 minutes. Please save your work.")
+                QMessageBox.warning(self, "Session Expiring Soon",
+                                    "Your session will expire in 5 minutes. Please save your work.")
 
     def show_login_dialog(self):
         """Show the login dialog."""
@@ -324,7 +365,6 @@ class SimpleBrowser(QMainWindow):
             print(f"Proxy set to {proxy_url}:{proxy_port}")
         else:
             sys.exit(1)
-
 
     def set_proxy(self):
         """Set up the proxy for the browser."""
@@ -475,12 +515,13 @@ class SimpleBrowser(QMainWindow):
 
         # Clear Cache
         profile.clearHttpCache()  # Clear the HTTP cache
-        
+
         # Clear Form Data (if desired)
         profile.clearAllData()  # If this exists in your Qt version, it clears form autofill and more
 
         # Show a confirmation message
         QMessageBox.information(self, "Data Cleared", "All browser data has been successfully cleared.")
+
 
 if __name__ == "__main__":
     app = QApplication([])

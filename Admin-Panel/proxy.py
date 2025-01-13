@@ -247,11 +247,11 @@ def get_proxy():
         return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Espot Solutions.'}), 200
 
     if not user.proxy_id :
-        return jsonify({'status': 0, 'error_message': 'No proxy assigned to this user'}), 200
+        return jsonify({'status': 0, 'error_message': 'Your account configuration is incomplete. Contact support'}), 200
 
     proxy = Proxy.query.get(user.proxy_id)
     if not proxy:
-        return jsonify({'status': 0, 'error_message': 'No proxy assigned to this user'}), 200
+        return jsonify({'status': 0, 'error_message': 'Your account configuration is incomplete. Contact support'}), 200
 
     proxy_details = {
         'proxy_url': proxy.host,
