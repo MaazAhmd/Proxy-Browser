@@ -128,7 +128,6 @@ class LoginDialog(QDialog):
         self.username = self.username_input.text()
         self.password = self.password_input.text()
         proxy_details = self.get_proxy_details(self.username, self.password)
-        print(proxy_details)
         if proxy_details:
             global proxy_url, proxy_port, proxy_user, proxy_password
             proxy_url = proxy_details['proxy_url']
@@ -137,6 +136,7 @@ class LoginDialog(QDialog):
             proxy_password = proxy_details['proxy_password']
             self.disabled_after = proxy_details['disabled_after']
             self.accept()
+            self.start_heartbeat()
 
     def generate_jwt(self):
         """Generate a JWT token."""
@@ -149,13 +149,11 @@ class LoginDialog(QDialog):
 
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
-        api_url = "https://espotbrowser.onrender.com/proxy/get-proxy"
+        api_url = "http://127.0.0.1:5000/proxy/get-proxy"
         token = self.generate_jwt()
         headers = {'x-access-token': token}
         try:
             response = requests.post(api_url, json={"username": username, "password": password}, headers=headers)
-            print("Status Code:", response.status_code)
-            print("Response Text:", response.text)
             if response.status_code == 200:
                 data = response.json()
                 if data['status'] == 1:
@@ -170,7 +168,31 @@ class LoginDialog(QDialog):
             print("Error calling API:", e)
             QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
             return None
+    def start_heartbeat(self):
+        """Start a timer to send heartbeat signals to the server."""
+        self.heartbeat_timer = QTimer(self)
+        self.heartbeat_timer.timeout.connect(lambda: self.send_heartbeat(True))
+        self.heartbeat_timer.start(60000)  # Send heartbeat every 60 seconds
+        self.send_heartbeat(True)  # Send initial heartbeat
 
+    def send_heartbeat(self, login_status):
+        """Send a heartbeat signal to the server."""
+        api_url = "http://127.0.0.1:5000/heartbeat"
+        headers = {'x-access-token': self.generate_jwt()}
+        try:
+            response = requests.post(api_url, json={"username": self.username, "status": login_status}, headers=headers)
+            if response.status_code != 200:
+                print("Heartbeat failed:", response.json())
+                self.heartbeat_timer.stop()
+                QMessageBox.warning(self, "Session Expired", "Your session has expired.")
+                self.close()
+                self.show_login_dialog()
+        except requests.RequestException as e:
+            print("Error sending heartbeat:", e)
+            self.heartbeat_timer.stop()
+            QMessageBox.warning(self, "Session Expired", "Your session has expired.")
+            self.close()
+            self.show_login_dialog()
 
 class CustomWebEnginePage(QWebEnginePage):
     """Custom QWebEnginePage for handling JavaScript and CSP issues."""
@@ -209,7 +231,6 @@ class SimpleBrowser(QMainWindow):
         self.resize(1280, 800)
 
         # Tab Widget to manage multiple tabs
-        # Modify Tab Widget to add a "+" button
         self.tabs = QTabWidget(self)
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
@@ -327,7 +348,6 @@ class SimpleBrowser(QMainWindow):
         # Create a custom widget to hold the layout
         custom_widget = QWidget()
         custom_widget.setLayout(custom_tab_bar_layout)
-
         # Add the custom widget to the tab bar
         self.tabs.setCornerWidget(custom_widget, Qt.TopRightCorner)
 
@@ -341,12 +361,9 @@ class SimpleBrowser(QMainWindow):
         """Check if the session has expired or is about to expire."""
         current_time = QDateTime.currentDateTime()
         expiration_time = QDateTime.fromString(self.disabled_after, "ddd, dd MMM yyyy HH:mm:ss 'GMT'")
-        print(f"self.disabled_after: {self.disabled_after}")
-        print(expiration_time)
 
         if self.disabled_after:
             time_left = current_time.secsTo(expiration_time)
-            print(time_left)
 
             if time_left <= 0:
                 self.timer.stop()
@@ -363,6 +380,8 @@ class SimpleBrowser(QMainWindow):
         if login_dialog.exec_() == QDialog.Accepted:
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
+            self.disabled_after = login_dialog.disabled_after
+            self.start_heartbeat()
         else:
             sys.exit(1)
 

@@ -1,11 +1,12 @@
-from flask import Flask, render_template, flash, redirect, url_for
-from sqlalchemy import TEXT, text
+from flask import Flask, render_template, flash, redirect, url_for, request, jsonify
+from datetime import datetime
+import jwt
 from models import db, User, Proxy, Admin
 from flask_login import LoginManager, login_required
 from dotenv import load_dotenv
 import os
 from flask_migrate import Migrate
-
+from functools import wraps
 from auth import auth_bp
 from users import users_bp
 from proxy import proxies_bp
@@ -57,6 +58,42 @@ def index():
     num_proxies = Proxy.query.count()
     return render_template('dashboard.html', num_users=num_users, num_proxies=num_proxies, page='dashboard')
 
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+        if not token:
+            return jsonify({'status': 0, 'error_message': 'Token is missing!'}), 401
+        try:
+            data = jwt.decode(token, os.getenv('TOKEN_SECRET_KEY'), algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({'status': 0, 'error_message': 'Token has expired!'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'status': 0, 'error_message': 'Invalid token!'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route('/heartbeat', methods=['POST'])
+@token_required
+def heartbeat():
+    data = request.json
+    username = data.get('username')
+    login_status = data.get('status')
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'}), 404
+
+    # Update the session status
+    if login_status is False:
+        user.last_logged_in = None
+    else:
+        user.last_logged_in = datetime.utcnow()
+
+    db.session.commit()
+    return jsonify({'status': 'success'}), 200
 
 # Generic error handler for all exceptions
 @app.errorhandler(500)
