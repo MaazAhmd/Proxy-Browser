@@ -9,9 +9,6 @@ from models import db, Proxy, User
 import jwt
 import os
 from functools import wraps
-import jwt
-import os
-from functools import wraps
 from models import db, Proxy, User, Group
 from werkzeug.security import check_password_hash
 
@@ -252,6 +249,12 @@ def get_proxy():
     proxy = Proxy.query.get(user.proxy_id)
     if not proxy:
         return jsonify({'status': 0, 'error_message': 'Your account configuration is incomplete. Contact support'}), 200
+
+    if user.last_logged_in and (datetime.utcnow() - user.last_logged_in).total_seconds() < 60:
+        return jsonify({'status': 0, 'error_message': 'Already logged in. Please close other sessions and try again.'}), 200
+
+    user.last_logged_in = datetime.utcnow()
+    db.session.commit()
 
     proxy_details = {
         'proxy_url': proxy.host,

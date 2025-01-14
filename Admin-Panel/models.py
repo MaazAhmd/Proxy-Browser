@@ -23,7 +23,7 @@ class User(db.Model):
     password = db.Column(db.String(200), nullable=False)
     disabled_after = db.Column(db.DateTime, nullable=True)
     disabled = db.Column(db.Boolean, nullable=False, default=False)
-    
+    last_logged_in = db.Column(db.DateTime, nullable=True)
     proxy_id = db.Column(db.String(64), db.ForeignKey('proxy.id'), nullable=True)
     proxy = db.relationship('Proxy', back_populates='assigned_to_users')  # Relationship with Proxy
     
