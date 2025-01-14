@@ -44,10 +44,10 @@ def add_proxy():
             flash('All fields are required!', 'danger')
             return redirect(url_for('proxy.add_proxy'))
 
-        # Check for unique constraints
-        if Proxy.query.filter((Proxy.username == username) | (Proxy.host == host) | (Proxy.port == port)).first():
-            flash('Proxy details must be unique!', 'danger')
-            return redirect(url_for('proxy.add_proxy'))
+        # # Check for unique constraints
+        # if Proxy.query.filter((Proxy.username == username) | (Proxy.host == host) | (Proxy.port == port)).first():
+        #     flash('Proxy details must be unique!', 'danger')
+        #     return redirect(url_for('proxy.add_proxy'))
 
         # Create a new proxy
         new_proxy = Proxy(
@@ -81,16 +81,16 @@ def edit_proxy(proxy_id):
             return redirect(url_for('proxy.edit_proxy', proxy_id=proxy_id))
 
         # Check for unique constraints (excluding the current proxy being edited)
-        existing_proxy = Proxy.query.filter(
-            ((Proxy.username == username) |
-             (Proxy.host == host) |
-             (Proxy.port == port)) &
-            (Proxy.id != proxy_id)
-        ).first()
-
-        if existing_proxy:
-            flash('Proxy details must be unique!', 'danger')
-            return redirect(url_for('proxy.edit_proxy', proxy_id=proxy_id))
+        # existing_proxy = Proxy.query.filter(
+        #     ((Proxy.username == username) |
+        #      (Proxy.host == host) |
+        #      (Proxy.port == port)) &
+        #     (Proxy.id != proxy_id)
+        # ).first()
+        #
+        # if existing_proxy:
+        #     flash('Proxy details must be unique!', 'danger')
+        #     return redirect(url_for('proxy.edit_proxy', proxy_id=proxy_id))
 
         # Update proxy details
         proxy.username = username

@@ -32,7 +32,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only).
 ;PrivilegesRequired=lowest
 OutputBaseFilename=Setup - Espot Browser
-SetupIconFile=D:\VS code\Proxy-Browser\Desktop-Browser\assets\logo.ico
+SetupIconFile=D:\Work\Proxy-Browser\Desktop-Browser\assets\logo.ico
 SolidCompression=yes
 WizardStyle=modern
 
@@ -43,7 +43,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "D:\VS code\Proxy-Browser\Desktop-Browser\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\Work\Proxy-Browser\Desktop-Browser\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
