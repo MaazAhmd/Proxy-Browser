@@ -4,12 +4,11 @@ import sys
 import requests
 import jwt
 import datetime
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
     QTabWidget,
     QToolBar,
-    QAction,
     QLineEdit,
     QMessageBox,
     QDialog,
@@ -20,13 +19,13 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QWidget
 )
-from PyQt5.QtCore import QUrl, Qt, QTimer, QDateTime
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEnginePage, QWebEngineProfile
-from PyQt5.QtGui import QIcon, QPixmap, QPainter
-from PyQt5.QtSvg import QSvgRenderer
-from PyQt5.QtNetwork import QNetworkCookieJar, QNetworkProxy
-from PyQt5.QtWebEngineWidgets import QWebEngineProfile
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings, QWebEngineProfile
+from PyQt6.QtWebChannel import QWebChannel
+from PyQt6.QtCore import QUrl, Qt, QTimer, QDateTime
+from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtGui import QIcon, QPixmap, QPainter, QAction
+from PyQt6.QtSvg import QSvgRenderer
+from PyQt6.QtNetwork import QNetworkProxy
 
 # Global variables for proxy details
 SECRET_KEY = 'QR2vZ7ocC7JkF0b02Kd7a5slN92MYgvd'
@@ -41,7 +40,7 @@ class LoginDialog(QDialog):
         super().__init__()
         self.setWindowTitle("Espot Browser")
         self.setModal(True)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
         self.username = None
         self.password = None
         self.disabled_after = None
@@ -56,40 +55,40 @@ class LoginDialog(QDialog):
         # Add logo at the top
         self.logo_label = QLabel(self)
         self.logo_pixmap = QPixmap(os.path.join(assets_path, "logo.png"))
-        self.logo_pixmap = self.logo_pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.logo_pixmap = self.logo_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         self.logo_label.setPixmap(self.logo_pixmap)
-        self.logo_label.setAlignment(Qt.AlignCenter)
+        self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.logo_label)
         self.tagline_label = QLabel("Your Gateway to Business Excellence")
-        self.tagline_label.setAlignment(Qt.AlignCenter)
+        self.tagline_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.tagline_label)
         self.phone_label = QLabel("03204342479")
-        self.phone_label.setCursor(Qt.IBeamCursor)
-        self.phone_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.phone_label.setAlignment(Qt.AlignCenter)
+        self.phone_label.setCursor(Qt.CursorShape.IBeamCursor)
+        self.phone_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.phone_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.phone_label)
         # Username input
         self.username_label = QLabel("Username:")
-        self.username_input = QLineEdit()
+        self.username_input = QLineEdit("maaz")
         layout.addWidget(self.username_label)
         layout.addWidget(self.username_input)
 
         # Password input
         self.password_label = QLabel("Password:")
-        self.password_input = QLineEdit()
-        self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input = QLineEdit("1234")
+        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
 
         # Login button
         self.login_button = QPushButton("Login")
         self.login_button.clicked.connect(self.login)
-        self.login_button.setCursor(Qt.PointingHandCursor)
+        self.login_button.setCursor(Qt.CursorShape.PointingHandCursor)
         layout.addWidget(self.login_button)
         self.contact_label = QLabel("In case of issues, contact Espot Solutions at: 03204342479")
-        self.contact_label.setCursor(Qt.IBeamCursor)
+        self.contact_label.setCursor(Qt.CursorShape.IBeamCursor)
         self.contact_label.setObjectName("contactLabel")
-        self.contact_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.contact_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.contact_label)
         self.setLayout(layout)
 
@@ -224,13 +223,13 @@ class SimpleBrowser(QMainWindow):
 
         # Show login dialog
         self.login_dialog = LoginDialog()
-        if self.login_dialog.exec_() == QDialog.Accepted:
+        if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
             self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
             self.start_session_timer()
         else:
-            sys.exit(1)
+            sys.exit(app.exec())
         if hasattr(sys, '_MEIPASS'):
             assets_path = os.path.join(sys._MEIPASS, 'assets')
         else:
@@ -354,17 +353,17 @@ class SimpleBrowser(QMainWindow):
         # Add the "+" button
         new_tab_button = QPushButton("+", self)
         new_tab_button.setFixedSize(30, 30)
-        new_tab_button.setCursor(Qt.PointingHandCursor)
+        new_tab_button.setCursor(Qt.CursorShape.PointingHandCursor)
         new_tab_button.clicked.connect(self.new_tab)
 
         # Add the "+" button to the layout
-        custom_tab_bar_layout.addWidget(new_tab_button, alignment=Qt.AlignRight)  # Align button to the right
+        custom_tab_bar_layout.addWidget(new_tab_button, alignment=Qt.AlignmentFlag.AlignRight)  # Align button to the right
 
         # Create a custom widget to hold the layout
         custom_widget = QWidget()
         custom_widget.setLayout(custom_tab_bar_layout)
         # Add the custom widget to the tab bar
-        self.tabs.setCornerWidget(custom_widget, Qt.TopRightCorner)
+        self.tabs.setCornerWidget(custom_widget, Qt.Corner.TopRightCorner)
 
     def start_session_timer(self):
         """Start a timer to check session expiration every minute."""
@@ -392,18 +391,18 @@ class SimpleBrowser(QMainWindow):
     def show_login_dialog(self):
         """Show the login dialog."""
         login_dialog = LoginDialog()
-        if login_dialog.exec_() == QDialog.Accepted:
+        if login_dialog.exec() == QDialog.DialogCode.Accepted:
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
             self.disabled_after = login_dialog.disabled_after
             login_dialog.start_heartbeat()
         else:
-            sys.exit(1)
+            sys.exit(app.exec())
 
     def set_proxy(self):
         """Set up the proxy for the browser."""
         proxy = QNetworkProxy()
-        proxy.setType(QNetworkProxy.HttpProxy)
+        proxy.setType(QNetworkProxy.ProxyType.HttpProxy)
         proxy.setHostName(proxy_url)
         proxy.setPort(int(proxy_port))
         proxy.setUser(proxy_user)
@@ -434,12 +433,15 @@ class SimpleBrowser(QMainWindow):
         browser_view.setUrl(QUrl("https://espotsolutions.com/"))  # Start with Google
 
         # Enable JavaScript and adjust settings for compatibility
-        browser_view.settings().setAttribute(QWebEngineSettings.JavascriptEnabled, True)
-        browser_view.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
-        browser_view.settings().setAttribute(QWebEngineSettings.PluginsEnabled, True)
-        browser_view.settings().setAttribute(QWebEngineSettings.WebGLEnabled, True)
-
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.Accelerated2dCanvasEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.AutoLoadImages, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, True)
         # Set User-Agent to mimic Chrome (bypasses some stricter CSPs)
+        browser_view.page().setWebChannel(QWebChannel(browser_view.page()))
         browser_view.page().profile().setHttpUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"
         )
@@ -513,7 +515,7 @@ class SimpleBrowser(QMainWindow):
         try:
             svg_renderer = QSvgRenderer(svg_content.encode("utf-8"))
             pixmap = QPixmap(32, 32)
-            pixmap.fill(Qt.transparent)
+            pixmap.fill(Qt.GlobalColor.transparent)
             painter = QPainter(pixmap)
             svg_renderer.render(painter)
             painter.end()
@@ -569,9 +571,9 @@ class SimpleBrowser(QMainWindow):
 
 
 if __name__ == "__main__":
-    app = QApplication([])
+    app = QApplication(sys.argv)
 
     browser = SimpleBrowser()
     browser.show()
 
-    app.exec_()
+    app.exec()
