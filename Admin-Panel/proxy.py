@@ -219,7 +219,6 @@ def token_required(f):
     return decorated
 
 @proxies_bp.route('/get-proxy', methods=['POST'])
-@token_required
 def get_proxy():
     data = request.json
     username = data.get('username')

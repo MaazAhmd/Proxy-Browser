@@ -25,6 +25,8 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEng
 from PyQt5.QtGui import QIcon, QPixmap, QPainter
 from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtNetwork import QNetworkCookieJar, QNetworkProxy
+from PyQt5.QtWebEngineWidgets import QWebEngineProfile
+from PyQt5.QtWidgets import QMessageBox
 
 # Global variables for proxy details
 SECRET_KEY = 'QR2vZ7ocC7JkF0b02Kd7a5slN92MYgvd'
@@ -149,7 +151,7 @@ class LoginDialog(QDialog):
 
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
-        api_url = "http://127.0.0.1:5000/proxy/get-proxy"
+        api_url = "https://espotbrowser.onrender.com/proxy/get-proxy"
         token = self.generate_jwt()
         headers = {'x-access-token': token}
         try:
@@ -162,12 +164,15 @@ class LoginDialog(QDialog):
                     QMessageBox.critical(self, "Login Failed", data['error_message'])
                     return None
             else:
+                print(token)
+                print(response.json())
                 QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
                 return None
         except requests.RequestException as e:
             print("Error calling API:", e)
             QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
             return None
+
     def start_heartbeat(self):
         """Start a timer to send heartbeat signals to the server."""
         self.heartbeat_timer = QTimer(self)
@@ -175,9 +180,15 @@ class LoginDialog(QDialog):
         self.heartbeat_timer.start(60000)  # Send heartbeat every 60 seconds
         self.send_heartbeat(True)  # Send initial heartbeat
 
+    def stop_heartbeat(self):
+        """Stop the heartbeat timer and send a final signal to the server."""
+        if hasattr(self, 'heartbeat_timer'):
+            self.heartbeat_timer.stop()
+        self.send_heartbeat(False)
+
     def send_heartbeat(self, login_status):
         """Send a heartbeat signal to the server."""
-        api_url = "http://127.0.0.1:5000/heartbeat"
+        api_url = "https://espotbrowser.onrender.com/heartbeat"
         headers = {'x-access-token': self.generate_jwt()}
         try:
             response = requests.post(api_url, json={"username": self.username, "status": login_status}, headers=headers)
@@ -212,11 +223,11 @@ class SimpleBrowser(QMainWindow):
         super().__init__()
 
         # Show login dialog
-        login_dialog = LoginDialog()
-        if login_dialog.exec_() == QDialog.Accepted:
+        self.login_dialog = LoginDialog()
+        if self.login_dialog.exec_() == QDialog.Accepted:
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
-            self.disabled_after = login_dialog.disabled_after  # Store the disabled_after value
+            self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
             self.start_session_timer()
         else:
             sys.exit(1)
@@ -227,7 +238,7 @@ class SimpleBrowser(QMainWindow):
 
         self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Browser Window Setup
-        self.setWindowTitle("Espot Browser")
+        self.setWindowTitle("ESpot Browser")
         self.resize(1280, 800)
 
         # Tab Widget to manage multiple tabs
@@ -237,8 +248,8 @@ class SimpleBrowser(QMainWindow):
         self.tabs.setMovable(True)  # Allow rearranging tabs
         self.setCentralWidget(self.tabs)
 
-        # Add "+" button to the tab bar
-        self.add_new_tab_button()
+        # # Add "+" button to the tab bar
+        # self.add_new_tab_button()
 
         # Navigation bar (Back, Forward, Reload buttons)
         navbar = QToolBar("Navigation")
@@ -330,6 +341,10 @@ class SimpleBrowser(QMainWindow):
         # Open a new tab when the browser starts
         self.new_tab()
 
+    def closeEvent(self, event):
+        self.login_dialog.stop_heartbeat()
+        event.accept()
+
     def add_new_tab_button(self):
         """Add a '+' button right next to the tabs on the right side."""
         # Create a layout for the custom tab bar
@@ -381,7 +396,7 @@ class SimpleBrowser(QMainWindow):
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
             self.disabled_after = login_dialog.disabled_after
-            self.start_heartbeat()
+            login_dialog.start_heartbeat()
         else:
             sys.exit(1)
 
@@ -524,19 +539,30 @@ class SimpleBrowser(QMainWindow):
 
     def clean_data(self):
         """Clear all the browser data like history, cookies, cache, etc."""
+        # Get the default profile
         profile = QWebEngineProfile.defaultProfile()
 
-        # Clear History (Since QWebEngine does not provide a method, this is a challenge)
-        # Consider implementing custom history management or integrating other solutions if necessary.
-
         # Clear Cookies
-        profile.cookieStore().deleteAllCookies()  # Delete all cookies from the current profile
+        if profile.cookieStore():
+            profile.cookieStore().deleteAllCookies()
 
         # Clear Cache
-        profile.clearHttpCache()  # Clear the HTTP cache
+        try:
+            profile.clearHttpCache()
+        except AttributeError:
+            print("clearHttpCache() is not supported in this version of PyQt.")
 
-        # Clear Form Data (if desired)
-        profile.clearAllData()  # If this exists in your Qt version, it clears form autofill and more
+        # Clear Local Storage (if supported)
+        try:
+            profile.clearAllVisitedLinks()  # Clears visited links (if supported)
+        except AttributeError:
+            print("clearAllVisitedLinks() is not supported in this version of PyQt.")
+
+        # Clear additional data like autofill (if supported)
+        try:
+            profile.clearAllData()
+        except AttributeError:
+            print("clearAllData() is not supported in this version of PyQt.")
 
         # Show a confirmation message
         QMessageBox.information(self, "Data Cleared", "All browser data has been successfully cleared.")
