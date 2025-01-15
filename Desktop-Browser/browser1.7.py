@@ -69,13 +69,13 @@ class LoginDialog(QDialog):
         layout.addWidget(self.phone_label)
         # Username input
         self.username_label = QLabel("Username:")
-        self.username_input = QLineEdit("maaz")
+        self.username_input = QLineEdit("")
         layout.addWidget(self.username_label)
         layout.addWidget(self.username_input)
 
         # Password input
         self.password_label = QLabel("Password:")
-        self.password_input = QLineEdit("1234")
+        self.password_input = QLineEdit("")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
@@ -107,6 +107,8 @@ class LoginDialog(QDialog):
                 border: 1px solid #ccc;
                 border-radius: 5px;
                 font-size: 14px;
+                background: white;
+                color: black;
             }
             QPushButton {
                 background-color: #4CAF50;
@@ -303,6 +305,7 @@ class SimpleBrowser(QMainWindow):
                 min-width: 100px;
                 padding: 5px;
                 margin: 2px;
+                color: black;
             }
             QTabBar::tab:selected, QTabBar::tab:hover {
                 background: #f0f0f0;
@@ -334,6 +337,7 @@ class SimpleBrowser(QMainWindow):
                 margin-left: 10px;
                 margin-right: 10px;
                 font-size: 14px;
+                color: black;
             }
         """)
 
