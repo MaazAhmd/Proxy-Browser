@@ -32,7 +32,7 @@ class User(db.Model):
     
     def set_disabled_after(self, days, hours):
         """Set the disabled_after time based on days and hours"""
-        self.disabled_after = datetime.utcnow() + datetime.timedelta(days=days, hours=hours)
+        self.disabled_after = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=days, hours=hours)
         db.session.commit()
 
     def get_proxy_hostname(self):
@@ -61,3 +61,13 @@ class Group(db.Model):
 
     users = db.relationship('User', back_populates='group', cascade="all, delete-orphan")
 
+
+class Cookie(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), nullable=False, unique=True)
+    cookies = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now(datetime.UTC))
+
+    def __init__(self, username, cookies):
+        self.username = username
+        self.cookies = cookies

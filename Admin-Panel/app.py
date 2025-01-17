@@ -11,6 +11,7 @@ from auth import auth_bp
 from users import users_bp
 from proxy import proxies_bp
 from groups import groups_bp
+from cookie import cookie_api
 
 app = Flask(__name__)
 
@@ -49,6 +50,7 @@ app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(users_bp, url_prefix='/users')
 app.register_blueprint(proxies_bp, url_prefix='/proxy')
 app.register_blueprint(groups_bp, url_prefix='/groups')
+app.register_blueprint(cookie_api, url_prefix='/')
 
 
 @app.route('/')
