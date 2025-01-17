@@ -3,6 +3,7 @@ import os
 import sys
 import requests
 import jwt
+import json
 import datetime
 from PyQt6.QtWidgets import (
     QApplication,
@@ -25,7 +26,7 @@ from PyQt6.QtCore import QUrl, Qt, QTimer, QDateTime
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QAction
 from PyQt6.QtSvg import QSvgRenderer
-from PyQt6.QtNetwork import QNetworkProxy
+from PyQt6.QtNetwork import QNetworkProxy, QNetworkCookie
 
 # Global variables for proxy details
 SECRET_KEY = 'QR2vZ7ocC7JkF0b02Kd7a5slN92MYgvd'
@@ -226,6 +227,7 @@ class SimpleBrowser(QMainWindow):
         if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
+            self.retrieve_cookies(self.login_dialog.username)
             self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
             self.start_session_timer()
         else:
@@ -341,6 +343,7 @@ class SimpleBrowser(QMainWindow):
         self.new_tab()
 
     def closeEvent(self, event):
+        self.store_cookies(self.login_dialog.username)
         self.login_dialog.stop_heartbeat()
         event.accept()
 
@@ -455,6 +458,13 @@ class SimpleBrowser(QMainWindow):
             lambda ok, browser_view=browser_view: self.update_tab_title(browser_view, ok)
         )
 
+        # Connect urlChanged signal to update the search bar
+        browser_view.urlChanged.connect(self.update_search_bar)
+
+    def update_search_bar(self, url):
+        """Update the search bar text with the current URL."""
+        self.search_bar.setText(url.toString())
+
     def update_tab_title(self, browser_view, ok):
         """Update the tab title based on the page title."""
         if ok:
@@ -554,21 +564,52 @@ class SimpleBrowser(QMainWindow):
         except AttributeError:
             print("clearHttpCache() is not supported in this version of PyQt.")
 
-        # Clear Local Storage (if supported)
-        try:
-            profile.clearAllVisitedLinks()  # Clears visited links (if supported)
-        except AttributeError:
-            print("clearAllVisitedLinks() is not supported in this version of PyQt.")
-
-        # Clear additional data like autofill (if supported)
-        try:
-            profile.clearAllData()
-        except AttributeError:
-            print("clearAllData() is not supported in this version of PyQt.")
+        # Clear Local Storage
+        profile.removeAllVisitedLinks()
 
         # Show a confirmation message
         QMessageBox.information(self, "Data Cleared", "All browser data has been successfully cleared.")
 
+    def store_cookies(username):
+        profile = QWebEngineProfile.defaultProfile()
+        cookies = profile.cookieStore().allCookies()
+        serialized_cookies = [cookie.toRawForm().data().decode('utf-8') for cookie in cookies]
+
+        api_url = "https://espotbrowser.onrender.com/store-cookies"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            'username': username,
+            'cookies': serialized_cookies
+        }
+
+        try:
+            response = requests.post(api_url, headers=headers, data=json.dumps(data))
+            if response.status_code == 200:
+                print("Cookies stored successfully.")
+            else:
+                print("Failed to store cookies:", response.json())
+        except requests.RequestException as e:
+            print("Error storing cookies:", e)
+
+    def retrieve_cookies(username):
+        profile = QWebEngineProfile.defaultProfile()
+
+        api_url = "https://espotbrowser.onrender.com/retrieve-cookies"
+        headers = {'Content-Type': 'application/json'}
+        data = {'username': username}
+
+        try:
+            response = requests.post(api_url, headers=headers, data=json.dumps(data))
+            if response.status_code == 200:
+                serialized_cookies = response.json().get('cookies', [])
+                for cookie_str in serialized_cookies:
+                    cookie = QNetworkCookie.parseCookies(cookie_str.encode('utf-8'))
+                    profile.cookieStore().setCookie(cookie[0])
+                print("Cookies retrieved successfully.")
+            else:
+                print("Failed to retrieve cookies:", response.json())
+        except requests.RequestException as e:
+            print("Error retrieving cookies:", e)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
