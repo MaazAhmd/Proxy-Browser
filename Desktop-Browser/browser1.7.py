@@ -229,6 +229,7 @@ class SimpleBrowser(QMainWindow):
         if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
+            print(self.login_dialog.username)
             self.retrieve_cookies(self.login_dialog.username)
             self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
             self.start_session_timer()
@@ -574,28 +575,29 @@ class SimpleBrowser(QMainWindow):
         # Show a confirmation message
         QMessageBox.information(self, "Data Cleared", "All browser data has been successfully cleared.")
 
-    def store_cookies(username):
+    def store_cookies(self, username):
         profile = QWebEngineProfile.defaultProfile()
-        cookies = profile.cookieStore().allCookies()
-        serialized_cookies = [cookie.toRawForm().data().decode('utf-8') for cookie in cookies]
+        cookies = profile.cookieStore().loadAllCookies()
+        if cookies:
+            serialized_cookies = [cookie.toRawForm().data().decode('utf-8') for cookie in cookies]
 
-        api_url = "https://espotbrowser.onrender.com/store-cookies"
-        headers = {'Content-Type': 'application/json'}
-        data = {
-            'username': username,
-            'cookies': serialized_cookies
-        }
+            api_url = "https://espotbrowser.onrender.com/store-cookies"
+            headers = {'Content-Type': 'application/json'}
+            data = {
+                'username': username,
+                'cookies': serialized_cookies
+            }
 
-        try:
-            response = requests.post(api_url, headers=headers, data=json.dumps(data))
-            if response.status_code == 200:
-                print("Cookies stored successfully.")
-            else:
-                print("Failed to store cookies:", response.json())
-        except requests.RequestException as e:
-            print("Error storing cookies:", e)
+            try:
+                response = requests.post(api_url, headers=headers, data=json.dumps(data))
+                if response.status_code == 200:
+                    print("Cookies stored successfully.")
+                else:
+                    print("Failed to store cookies:", response)
+            except requests.RequestException as e:
+                print("Error storing cookies:", e)
 
-    def retrieve_cookies(username):
+    def retrieve_cookies(self, username):
         profile = QWebEngineProfile.defaultProfile()
 
         api_url = "https://espotbrowser.onrender.com/retrieve-cookies"
@@ -611,7 +613,7 @@ class SimpleBrowser(QMainWindow):
                     profile.cookieStore().setCookie(cookie[0])
                 print("Cookies retrieved successfully.")
             else:
-                print("Failed to retrieve cookies:", response.json())
+                print("Failed to retrieve cookies:", response)
         except requests.RequestException as e:
             print("Error retrieving cookies:", e)
 

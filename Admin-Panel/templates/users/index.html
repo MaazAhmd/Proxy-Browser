@@ -73,22 +73,20 @@
                     >
                         Extend
                     </button>
-{#                    <button#}
-{#                            class="btn btn-primary btn-sm assign-proxy-btn"#}
-{#                            data-id="{{ user.id }}"#}
-{#                            data-username="{{ user.username }}"#}
-{#                            data-proxy="{{ user.proxy }}"#}
-{#                    >#}
-{#                        Assign Proxy#}
-{#                    </button>#}
+                    <button
+                            class="btn btn-primary btn-sm assign-proxy-btn"
+                            data-id="{{ user.id }}"
+                            data-username="{{ user.username }}"
+                            data-proxy="{{ user.proxy }}"
+                    >
+                        Assign Proxy
+                    </button>
                 </td>
             </tr>
 
         {% endfor %}
         </tbody>
     </table>
-
-
     <div class="modal fade" id="assignProxyModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -108,7 +106,20 @@
                     </div>
                     <ul id="proxyList" class="list-group"
                         style="min-height: 300px; max-height: 300px; overflow-y: auto;">
-                        <!-- Proxies will be dynamically rendered here -->
+                        {% for proxy in proxies %}
+                            <li
+                                    class="list-group-item d-flex justify-content-between align-items-center"
+                                    data-host="{{ proxy.host | lower }}"
+                            >
+                                {{ proxy.host }}
+                                <button
+                                        class="btn btn-success btn-sm assign-btn"
+                                        data-proxy-id="{{ proxy.id }}"
+                                >
+                                    Assign
+                                </button>
+                            </li>
+                        {% endfor %}
                     </ul>
                 </div>
                 <div class="modal-footer">
@@ -117,6 +128,7 @@
             </div>
         </div>
     </div>
+
 
     <div
             class="modal fade"
@@ -208,75 +220,71 @@
                     }
                 });
         });
-
         document.addEventListener('DOMContentLoaded', () => {
             const modal = new bootstrap.Modal(document.getElementById('assignProxyModal'));
             const proxyList = document.getElementById('proxyList');
             const searchProxies = document.getElementById('searchProxies');
+            let currentUserId = null;
 
+            // Attach click listeners to assign proxy buttons
             document.querySelectorAll('.assign-proxy-btn').forEach((btn) => {
                 btn.addEventListener('click', () => {
-                    const userId = btn.dataset.id;
+                    currentUserId = btn.dataset.id;
                     const username = btn.dataset.username;
-                    const assignedProxy = btn.dataset.proxy;
 
+                    // Set modal title
                     document.getElementById('modalUsername').textContent = username;
 
-                    // Fetch and display proxies
-                    fetch(`/users/proxies?user_id=${userId}`)
-                        .then((res) => res.json())
-                        .then((proxies) => {
-                            proxyList.innerHTML = '';
-                            proxies.forEach((proxy) => {
-                                const li = document.createElement('li');
-                                li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
-                                li.textContent = proxy.host;
-
-                                const assignBtn = document.createElement('button');
-                                assignBtn.classList.add('btn', 'btn-success', 'btn-sm');
-                                assignBtn.textContent = 'Assign';
-                                assignBtn.addEventListener('click', () => {
-                                    fetch(`/users/assign_proxy`, {
-                                        method: 'POST',
-                                        headers: {'Content-Type': 'application/json'},
-                                        body: JSON.stringify({user_id: userId, proxy_id: proxy.id}),
-                                    })
-                                        .then((res) => res.json())
-                                        .then((data) => {
-                                            if (data.success) {
-                                                btn.dataset.proxy = proxy.name;
-                                                modal.hide();
-                                                alert('Proxy assigned successfully!');
-                                            } else {
-                                                alert('Failed to assign proxy.');
-                                            }
-                                        });
-                                });
-
-                                li.appendChild(assignBtn);
-                                proxyList.appendChild(li);
-                            });
-                        });
-
+                    // Open the modal
                     modal.show();
                 });
             });
 
+            // Filter proxies in the list
             searchProxies.addEventListener('input', () => {
                 const query = searchProxies.value.toLowerCase();
-                const allProxies = Array.from(proxyList.children); // Keep a reference to all proxies
+                const items = proxyList.querySelectorAll('li');
 
-                // Clear the current list
-                proxyList.innerHTML = '';
-
-                // Append only matching proxies
-                allProxies
-                    .filter((li) => li.textContent.trim().toLowerCase().includes(query))
-                    .forEach((li) => proxyList.appendChild(li));
+                items.forEach((item) => {
+                    const host = item.getAttribute('data-host');
+                    if (host.includes(query)) {
+                        item.style.display = ''; // Show the item
+                        item.classList.add('d-flex')
+                    } else {
+                        item.style.display = 'none'; // Hide the item
+                        item.classList.remove('d-flex')
+                    }
+                });
             });
 
+            // Handle proxy assignment
+            proxyList.addEventListener('click', (event) => {
+                if (event.target.classList.contains('assign-btn')) {
+                    const proxyId = event.target.dataset.proxyId;
 
+                    // Send the assignment request
+                    fetch(`/users/assign_proxy`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({user_id: currentUserId, proxy_id: proxyId}),
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (data.success) {
+                                alert('Proxy assigned successfully!');
+                                modal.hide();
+                            } else {
+                                alert('Failed to assign proxy.');
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error assigning proxy:', error);
+                            alert('An error occurred while assigning the proxy.');
+                        });
+                }
+            });
         });
+
 
     </script>
 

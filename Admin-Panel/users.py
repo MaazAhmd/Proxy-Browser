@@ -30,11 +30,13 @@ def index():
             user.disabled = True
     db.session.commit()
 
+    proxies = Proxy.query.all()
     return render_template(
         'users/index.html',
         users=users,
         search_query=search_query,
-        page='users'
+        page='users',
+        proxies=proxies
     )
 
 
