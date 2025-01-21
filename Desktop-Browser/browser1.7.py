@@ -34,7 +34,6 @@ proxy_url = None
 proxy_port = None
 proxy_user = None
 proxy_password = None
-global_cookies = []
 
 
 class LoginDialog(QDialog):
@@ -224,14 +223,11 @@ class CustomWebEnginePage(QWebEnginePage):
 class SimpleBrowser(QMainWindow):
     def __init__(self):
         super().__init__()
-
         # Show login dialog
         self.login_dialog = LoginDialog()
         if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
-            self.retrieve_cookies(self.login_dialog.username)
-            self.store_cookies()
             self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
             self.start_session_timer()
         else:
@@ -349,7 +345,6 @@ class SimpleBrowser(QMainWindow):
         self.new_tab()
 
     def closeEvent(self, event):
-        self.save_global_cookies_to_db(self.login_dialog.username)
         self.login_dialog.stop_heartbeat()
         event.accept()
 
@@ -582,80 +577,6 @@ class SimpleBrowser(QMainWindow):
 
         # Show a confirmation message
         QMessageBox.information(self, "Data Cleared", "All browser data has been successfully cleared.")
-
-    def serialize_cookie(self, cookie):
-        name = cookie.name().data().decode('utf-8')
-        value = cookie.value().data().decode('utf-8')
-        domain = cookie.domain()
-        path = cookie.path()
-        secure = cookie.isSecure()
-        http_only = cookie.isHttpOnly()
-        expiry = cookie.expirationDate().toString() if cookie.expirationDate().isValid() else None
-
-        # Create a dictionary or JSON-like string for serialization
-        return {
-            "name": name,
-            "value": value,
-            "domain": domain,
-            "path": path,
-            "secure": secure,
-            "http_only": http_only,
-            "expiry": expiry,
-        }
-
-    def store_cookies(self):
-        profile = QWebEngineProfile.defaultProfile()
-        cookie_store = profile.cookieStore()
-
-        def handle_cookies(cookie):
-            # Serialize the single cookie
-            serialized_cookie = json.dumps(self.serialize_cookie(cookie))
-
-            # Add the cookie to the global list
-            global_cookies.append(serialized_cookie)
-            print(f"Cookie added to global variable: {serialized_cookie}")
-
-        # Connect the signal
-        cookie_store.cookieAdded.connect(handle_cookies)
-
-    def save_global_cookies_to_db(self, username):
-        # Save all cookies from the global variable to the database
-        api_url = "http://127.0.0.1:5000/store-cookies"
-        headers = {'Content-Type': 'application/json'}
-        data = {'username': username, 'cookies': global_cookies}
-
-        try:
-            response = requests.post(api_url, headers=headers, data=json.dumps(data))
-            if response.status_code == 200:
-                print("All cookies stored successfully.")
-            else:
-                print("Failed to store cookies to DB:", response.json())
-        except requests.RequestException as e:
-            print("Error storing cookies to DB:", e)
-
-    def retrieve_cookies(self, username):
-        profile = QWebEngineProfile.defaultProfile()
-
-        api_url = "http://127.0.0.1:5000/retrieve-cookies"
-        headers = {'Content-Type': 'application/json'}
-        data = {'username': username}
-
-        try:
-            response = requests.post(api_url, headers=headers, data=json.dumps(data))
-            if response.status_code == 200:
-                serialized_cookies = response.json().get('cookies', [])
-                global_cookies.extend(serialized_cookies)  # Store in the global list
-
-                for cookie_str in serialized_cookies:
-                    parsed_cookies = QNetworkCookie.parseCookies(cookie_str.encode('utf-8'))
-                    if parsed_cookies:  # Ensure parsing was successful
-                        profile.cookieStore().setCookie(parsed_cookies[0])
-
-                print("Cookies retrieved and loaded into the browser.")
-            else:
-                print("Failed to retrieve cookies:", response.json())
-        except requests.RequestException as e:
-            print("Error retrieving cookies:", e)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
