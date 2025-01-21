@@ -221,6 +221,10 @@ class CustomWebEnginePage(QWebEnginePage):
 
 
 class SimpleBrowser(QMainWindow):
+    _CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cache')
+    _STORAGE_PATH = os.path.join(os.path.dirname(__file__), 'storage')
+    _profile = None
+
     def __init__(self):
         super().__init__()
         # Show login dialog
@@ -241,7 +245,7 @@ class SimpleBrowser(QMainWindow):
         # Browser Window Setup
         self.setWindowTitle("ESpot Browser")
         self.resize(1280, 800)
-
+        profile = self._getProfile()
         # Tab Widget to manage multiple tabs
         self.tabs = QTabWidget(self)
         self.tabs.setTabsClosable(True)
@@ -429,12 +433,49 @@ class SimpleBrowser(QMainWindow):
         except requests.RequestException as e:
             print("Error connecting through proxy:", e)
 
+    def _getProfile(self) -> QWebEngineProfile:
+        if self._profile is not None:
+            self._printProfileDetails(self._profile)
+            return self._profile
+
+        if not (os.path.exists(self._CACHE_PATH) and os.path.isdir(self._CACHE_PATH)):
+            os.makedirs(self._CACHE_PATH)
+        if not (os.path.exists(self._STORAGE_PATH) and os.path.isdir(self._STORAGE_PATH)):
+            os.makedirs(self._STORAGE_PATH)
+
+        self._profile = QWebEngineProfile("MWVPersistentProfile")
+        self._profile.setCachePath(self._CACHE_PATH)
+        self._profile.setPersistentStoragePath(self._STORAGE_PATH)
+        self._profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
+        self._profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
+
+        self._printProfileDetails(self._profile)
+        return self._profile
+
+    def _generateWebEngineView(self, parent=None) -> QWebEngineView:
+        webEngine: QWebEngineView = QWebEngineView(parent=parent)
+        profile: QWebEngineProfile = self._getProfile()
+        webPage: QWebEnginePage = QWebEnginePage(profile, webEngine)
+        webEngine.setPage(webPage)
+        return webEngine
+
+    def _printProfileDetails(self, profile: QWebEngineProfile):
+        print("***********************")
+        print(f"Storage Name: {profile.storageName()}")
+        print(f"Cache Path: {profile.cachePath()}")
+        print(f"Storage Path: {profile.persistentStoragePath()}")
+        print(f"Cache Type: {profile.httpCacheType()}")
+        print(f"Persistent Cookie Policy: {profile.persistentCookiesPolicy()}")
+        print(f"Off The Record: {profile.isOffTheRecord()}")
+        print("***********************")
+
     def new_tab(self):
         """Open a new tab in the tab widget."""
         # Create a new WebEngineView for the tab
-        browser_view = QWebEngineView()
-        browser_view.setPage(CustomWebEnginePage(browser_view))  # Use custom page
-        browser_view.setUrl(QUrl("https://espotsolutions.com/"))  # Start with Google
+        browser_view = self._generateWebEngineView()
+        browser_view.setUrl(QUrl("https://espotsolutions.com/"))
+        self.tabs.addTab(browser_view, "New Tab")
+        self.tabs.setCurrentWidget(browser_view)
 
         # Enable JavaScript and adjust settings for compatibility
         browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)

@@ -2,7 +2,8 @@
 env/
 venv/
 .env
-
+cache/
+storage/
 migrations/
 *zip
 
