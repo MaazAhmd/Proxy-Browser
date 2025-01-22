@@ -70,13 +70,13 @@ class LoginDialog(QDialog):
         layout.addWidget(self.phone_label)
         # Username input
         self.username_label = QLabel("Username:")
-        self.username_input = QLineEdit("afnan")
+        self.username_input = QLineEdit("")
         layout.addWidget(self.username_label)
         layout.addWidget(self.username_input)
 
         # Password input
         self.password_label = QLabel("Password:")
-        self.password_input = QLineEdit("fjfjfj")
+        self.password_input = QLineEdit("")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
@@ -153,7 +153,7 @@ class LoginDialog(QDialog):
 
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
-        api_url = "http://127.0.0.1:5000/proxy/get-proxy"
+        api_url = "https://espotbrowser.onrender.com/proxy/get-proxy"
         token = self.generate_jwt()
         headers = {'x-access-token': token}
         try:
@@ -166,8 +166,6 @@ class LoginDialog(QDialog):
                     QMessageBox.critical(self, "Login Failed", data['error_message'])
                     return None
             else:
-                print(token)
-                print(response.json())
                 QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
                 return None
         except requests.RequestException as e:
@@ -190,7 +188,7 @@ class LoginDialog(QDialog):
 
     def send_heartbeat(self, login_status):
         """Send a heartbeat signal to the server."""
-        api_url = "http://127.0.0.1:5000/heartbeat"
+        api_url = "https://espotbrowser.onrender.com/heartbeat"
         headers = {'x-access-token': self.generate_jwt()}
         try:
             response = requests.post(api_url, json={"username": self.username, "status": login_status}, headers=headers)
@@ -221,8 +219,8 @@ class CustomWebEnginePage(QWebEnginePage):
 
 
 class SimpleBrowser(QMainWindow):
-    _CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cache')
-    _STORAGE_PATH = os.path.join(os.path.dirname(__file__), 'storage')
+    _CACHE_PATH = os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming', 'EspotBrowser', 'cache')
+    _STORAGE_PATH = os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming', 'EspotBrowser', 'storage')
     _profile = None
 
     def __init__(self):
@@ -437,7 +435,8 @@ class SimpleBrowser(QMainWindow):
         if self._profile is not None:
             self._printProfileDetails(self._profile)
             return self._profile
-
+        print(os.path.exists(self._CACHE_PATH))
+        print(os.path.isdir(self._CACHE_PATH))
         if not (os.path.exists(self._CACHE_PATH) and os.path.isdir(self._CACHE_PATH)):
             os.makedirs(self._CACHE_PATH)
         if not (os.path.exists(self._STORAGE_PATH) and os.path.isdir(self._STORAGE_PATH)):
@@ -514,7 +513,7 @@ class SimpleBrowser(QMainWindow):
             truncated_title = title[:15] if title else "Untitled"  # Truncate to 15 characters
             self.tabs.setTabText(self.tabs.indexOf(browser_view), truncated_title)
         else:
-            self.tabs.setTabText(self.tabs.indexOf(browser_view), "Failed to load")
+            self.tabs.setTabText(self.tabs.indexOf(browser_view), "Loading")
 
     def close_tab(self, index):
         """Close the tab at the given index."""
