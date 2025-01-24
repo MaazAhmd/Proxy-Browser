@@ -3,7 +3,7 @@ import os
 import sys
 import requests
 import jwt
-import json
+import shutil
 import datetime
 from PyQt6.QtWidgets import (
     QApplication,
@@ -348,7 +348,16 @@ class SimpleBrowser(QMainWindow):
 
     def closeEvent(self, event):
         self.login_dialog.stop_heartbeat()
+        self.cleanup_webengine_pages()
         event.accept()
+
+    def cleanup_webengine_pages(self):
+        """Ensure all QWebEnginePage instances are properly deleted."""
+        for i in range(self.tabs.count()):
+            browser_view = self.tabs.widget(i)
+            if browser_view:
+                browser_view.setPage(None)
+                browser_view.deleteLater()
 
     def add_new_tab_button(self):
         """Add a '+' button right next to the tabs on the right side."""
@@ -431,17 +440,18 @@ class SimpleBrowser(QMainWindow):
         except requests.RequestException as e:
             print("Error connecting through proxy:", e)
 
-    def _getProfile(self) -> QWebEngineProfile:
-        if self._profile is not None:
-            self._printProfileDetails(self._profile)
-            return self._profile
-        print(os.path.exists(self._CACHE_PATH))
-        print(os.path.isdir(self._CACHE_PATH))
+    def _ensure_directories(self):
         if not (os.path.exists(self._CACHE_PATH) and os.path.isdir(self._CACHE_PATH)):
             os.makedirs(self._CACHE_PATH)
         if not (os.path.exists(self._STORAGE_PATH) and os.path.isdir(self._STORAGE_PATH)):
             os.makedirs(self._STORAGE_PATH)
 
+    def _getProfile(self) -> QWebEngineProfile:
+        if self._profile is not None:
+            self._printProfileDetails(self._profile)
+            return self._profile
+
+        self._ensure_directories()
         self._profile = QWebEngineProfile("MWVPersistentProfile")
         self._profile.setCachePath(self._CACHE_PATH)
         self._profile.setPersistentStoragePath(self._STORAGE_PATH)
@@ -599,8 +609,13 @@ class SimpleBrowser(QMainWindow):
 
     def clean_data(self):
         """Clear all the browser data like history, cookies, cache, etc."""
+        # Close all tabs to release resources
+        while self.tabs.count() > 0:
+            self.tabs.removeTab(0)
+
+        self.new_tab()  # Open a new tab after clearing data
         # Get the default profile
-        profile = QWebEngineProfile.defaultProfile()
+        profile = self._getProfile()
 
         # Clear Cookies
         if profile.cookieStore():
@@ -613,10 +628,26 @@ class SimpleBrowser(QMainWindow):
             print("clearHttpCache() is not supported in this version of PyQt.")
 
         # Clear Local Storage
-        profile.removeAllVisitedLinks()
+        profile.clearAllVisitedLinks()
 
+        # Delete cache and storage directories
+        self._delete_directory(self._CACHE_PATH)
+        self._delete_directory(self._STORAGE_PATH)
+
+        self._ensure_directories()
         # Show a confirmation message
         QMessageBox.information(self, "Data Cleared", "All browser data has been successfully cleared.")
+
+    def _delete_directory(self, path):
+        """Delete the specified directory and its contents."""
+        if os.path.exists(path):
+            try:
+                shutil.rmtree(path)
+                print(f"Deleted directory: {path}")
+            except PermissionError:
+                print(f"Permission denied: {path}")
+            except Exception as e:
+                print(f"Error deleting directory {path}: {e}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
