@@ -487,8 +487,26 @@ class SimpleBrowser(QMainWindow):
         # Set User-Agent to mimic Chrome (bypasses some stricter CSPs)
         browser_view.page().setWebChannel(QWebChannel(browser_view.page()))
         browser_view.page().profile().setHttpUserAgent(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
         )
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.Accelerated2dCanvasEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.AutoLoadImages, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
+        browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled,
+                                             True)  # Important for media
+
+        def handle_permission_request(origin, feature):
+            if feature in [
+                QWebEnginePage.Feature.MediaAudioCapture,
+                QWebEnginePage.Feature.MediaVideoCapture,
+                QWebEnginePage.Feature.MediaAudioVideoCapture
+            ]:
+                browser_view.page().setFeaturePermission(origin, feature, QWebEnginePage.PermissionPolicy.PermissionGrantedByUser)
+
+        browser_view.page().featurePermissionRequested.connect(handle_permission_request)
 
         # Add the new tab
         index = self.tabs.addTab(browser_view, "New Tab")
