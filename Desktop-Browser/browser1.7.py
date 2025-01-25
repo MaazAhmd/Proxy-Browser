@@ -1,10 +1,14 @@
 import re
 import os
+import threading
 import sys
 import requests
 import jwt
 import shutil
 import datetime
+import boto3
+from concurrent.futures import ThreadPoolExecutor
+from botocore.exceptions import NoCredentialsError
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -219,21 +223,34 @@ class CustomWebEnginePage(QWebEnginePage):
 
 
 class SimpleBrowser(QMainWindow):
-    _CACHE_PATH = os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming', 'EspotBrowser', 'cache')
-    _STORAGE_PATH = os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming', 'EspotBrowser', 'storage')
     _profile = None
+    _bucket_name = "espotbrowser-cookies-data"
+    _cloudflare_access_key = "194c275f97c43291f4cbc8b54376a2f0"
+    _cloudflare_secret_key = "562e52307799862466c2e92d6491d47e7ab226bacf85e8427694b43c378e3352"
+    _cloudflare_endpoint_url = "https://381f96a585f51192da401d83b4af0f89.r2.cloudflarestorage.com"
 
     def __init__(self):
         super().__init__()
+        self.username = None
+        self._s3_client = boto3.client(
+            's3',
+            aws_access_key_id=self._cloudflare_access_key,
+            aws_secret_access_key=self._cloudflare_secret_key,
+            endpoint_url=self._cloudflare_endpoint_url
+        )
         # Show login dialog
         self.login_dialog = LoginDialog()
         if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
+            self.username = self.login_dialog.username
+            self._ensure_directories()
             self.set_proxy()
             print(f"Proxy set to {proxy_url}:{proxy_port}")
             self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
             self.start_session_timer()
+            self.download_data_from_cloud()
         else:
             sys.exit(app.exec())
+
         if hasattr(sys, '_MEIPASS'):
             assets_path = os.path.join(sys._MEIPASS, 'assets')
         else:
@@ -348,6 +365,7 @@ class SimpleBrowser(QMainWindow):
 
     def closeEvent(self, event):
         self.login_dialog.stop_heartbeat()
+        self.upload_data_to_cloud()
         self.cleanup_webengine_pages()
         event.accept()
 
@@ -624,6 +642,83 @@ class SimpleBrowser(QMainWindow):
 
     def clean_icon_svg(self):
         return """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4v2H6v12h12V6h-6V4h-2v2h-4V4h-2zm6 14H6v-2h12v2z"/></svg>"""
+
+    def _ensure_directories(self):
+        """Ensure that the cache and storage directories exist."""
+        self._CACHE_PATH = os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming', 'EspotBrowser', self.username, 'cache')
+        self._STORAGE_PATH = os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming', 'EspotBrowser', self.username, 'storage')
+        if not os.path.exists(self._CACHE_PATH):
+            os.makedirs(self._CACHE_PATH)
+        if not os.path.exists(self._STORAGE_PATH):
+            os.makedirs(self._STORAGE_PATH)
+
+    def upload_data_to_cloud(self):
+        """Upload cache and storage data to Cloudflare."""
+        self._upload_folder_to_cloud(self._CACHE_PATH, f"{self.username}/cache")
+        self._upload_folder_to_cloud(self._STORAGE_PATH, f"{self.username}/storage")
+
+    def download_data_from_cloud(self):
+        """Download cache and storage data from Cloudflare."""
+        self._download_folder_from_cloud(self._CACHE_PATH, f"{self.username}/cache")
+        self._download_folder_from_cloud(self._STORAGE_PATH, f"{self.username}/storage")
+
+    def _upload_file(self, file_path, key):
+        try:
+            with open(file_path, 'rb') as f:
+                file_data = f.read()
+            self._s3_client.put_object(Bucket=self._bucket_name, Key=key, Body=file_data)
+            print(f"Uploaded: {file_path} -> {key}")
+        except PermissionError:
+            print(f"Permission denied: {file_path}")
+        except NoCredentialsError:
+            print("AWS credentials not available")
+        except Exception as e:
+            print(f"Error uploading {file_path}: {e}")
+
+    def _upload_folder_to_cloud(self, folder_path, folder_name):
+        """Upload a folder to Cloudflare."""
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for root, _, files in os.walk(folder_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    if os.access(file_path, os.R_OK):  # Ensure readable
+                        key = f"{folder_name}/{os.path.relpath(file_path, folder_path)}"
+                        futures.append(executor.submit(self._upload_file, file_path, key))
+                    else:
+                        print(f"Skipping unreadable file: {file_path}")
+            for future in futures:
+                future.result()
+
+    def _download_file(self, key, file_path):
+        try:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            self._s3_client.download_file(self._bucket_name, key, file_path)
+            print(f"Downloaded: {key} -> {file_path}")
+        except NoCredentialsError:
+            print("AWS credentials not available")
+        except Exception as e:
+            print(f"Error downloading {key}: {e}")
+
+    def _download_folder_from_cloud(self, folder_path, folder_name):
+        """Download a folder from Cloudflare."""
+        try:
+            response = self._s3_client.list_objects_v2(Bucket=self._bucket_name, Prefix=folder_name)
+            if 'Contents' in response:
+                with ThreadPoolExecutor() as executor:
+                    futures = []
+                    for obj in response['Contents']:
+                        key = obj['Key']
+                        file_path = os.path.join(folder_path, os.path.relpath(key, folder_name))
+                        futures.append(executor.submit(self._download_file, key, file_path))
+                    for future in futures:
+                        future.result()
+            else:
+                print(f"No data found in Cloudflare for {folder_name}")
+        except NoCredentialsError:
+            print("AWS credentials not available")
+        except Exception as e:
+            print(f"Error downloading folder {folder_name}: {e}")
 
     def clean_data(self):
         """Clear all the browser data like history, cookies, cache, etc."""
