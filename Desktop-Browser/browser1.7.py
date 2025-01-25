@@ -26,7 +26,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings, QWebEngineProfile
 from PyQt6.QtWebChannel import QWebChannel
-from PyQt6.QtCore import QUrl, Qt, QTimer, QDateTime
+from PyQt6.QtCore import QUrl, Qt, QTimer, QDateTime, QCoreApplication
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QAction
 from PyQt6.QtSvg import QSvgRenderer
@@ -247,7 +247,7 @@ class SimpleBrowser(QMainWindow):
             print(f"Proxy set to {proxy_url}:{proxy_port}")
             self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
             self.start_session_timer()
-            self.download_data_from_cloud()
+            threading.Thread(target=self.download_data_from_cloud, daemon=True).start()
         else:
             sys.exit(app.exec())
 
@@ -364,10 +364,35 @@ class SimpleBrowser(QMainWindow):
         self.new_tab()
 
     def closeEvent(self, event):
+        """Handle application close event with uploading in the background."""
         self.login_dialog.stop_heartbeat()
-        self.upload_data_to_cloud()
         self.cleanup_webengine_pages()
-        event.accept()
+
+        # Show a dialog box indicating that data is being uploaded
+        self.msg_box = QMessageBox(self)
+        self.msg_box.setWindowTitle("Uploading Data")
+        self.msg_box.setText("Uploading your data to the cloud. The program will exit automatically.")
+        self.msg_box.setStandardButtons(QMessageBox.StandardButton.NoButton)
+        self.msg_box.show()
+
+        # Start the upload in a separate thread
+        self.upload_thread = threading.Thread(target=self.upload_data_to_cloud)
+        self.upload_thread.start()
+
+        # Use a QTimer to check if the upload is complete and close the application
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.check_upload_complete)
+        self.timer.start(1000)
+
+        # Ignore the close event for now
+        event.ignore()
+
+    def check_upload_complete(self):
+        """Check if the upload thread is complete."""
+        if not self.upload_thread.is_alive():
+            self.timer.stop()  # Stop the timer
+            self.msg_box.close()  # Close the message box
+            QCoreApplication.exit()  # Exit the application
 
     def cleanup_webengine_pages(self):
         """Ensure all QWebEnginePage instances are properly deleted."""
