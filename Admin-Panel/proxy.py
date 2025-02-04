@@ -9,7 +9,7 @@ from models import db, Proxy, User
 import jwt
 import os
 from functools import wraps
-from models import db, Proxy, User, Group
+from models import db, Proxy, User, Group, Session
 from werkzeug.security import check_password_hash
 
 proxies_bp = Blueprint('proxy', __name__, url_prefix='/proxies')
@@ -242,17 +242,23 @@ def get_proxy():
         db.session.commit()
         return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Espot Solutions.'}), 200
 
-    if not user.proxy_id :
+    if not user.proxy_id:
         return jsonify({'status': 0, 'error_message': 'Your account configuration is incomplete. Contact support'}), 200
 
     proxy = Proxy.query.get(user.proxy_id)
     if not proxy:
         return jsonify({'status': 0, 'error_message': 'Your account configuration is incomplete. Contact support'}), 200
 
-    if user.last_logged_in and (datetime.utcnow() - user.last_logged_in).total_seconds() < 60:
-        return jsonify({'status': 0, 'error_message': 'Already logged in. Please close other sessions and try again.'}), 200
+    # Check the number of active sessions for the user
+    active_sessions = Session.query.filter_by(user_id=user.id).count()
+    print(active_sessions, user.session_limit)
+    if active_sessions >= user.session_limit:
+        return jsonify({'status': 0, 'error_message': 'Session limit reached. Please close other sessions and try again.'}), 200
 
-    user.last_logged_in = datetime.utcnow()
+    # Create a new session for the user
+    ip_address = request.remote_addr
+    new_session = Session(user_id=user.id, ip_address=ip_address)
+    db.session.add(new_session)
     db.session.commit()
 
     proxy_details = {

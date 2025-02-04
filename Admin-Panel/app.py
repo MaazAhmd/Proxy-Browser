@@ -1,7 +1,7 @@
 from flask import Flask, render_template, flash, redirect, url_for, request, jsonify
 from datetime import datetime
 import jwt
-from models import db, User, Proxy, Admin
+from models import db, User, Proxy, Admin, Session
 from flask_login import LoginManager, login_required
 from dotenv import load_dotenv
 import os
@@ -83,16 +83,32 @@ def heartbeat():
     data = request.json
     username = data.get('username')
     login_status = data.get('status')
+    ip_address = request.remote_addr
 
     user = User.query.filter_by(username=username).first()
     if not user:
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
 
-    # Update the session status
+    # Check the number of active sessions for the user
+    active_sessions = Session.query.filter_by(user_id=user.id).count()
+
     if login_status is False:
-        user.last_logged_in = None
+        # Remove the session for the given IP address
+        session = Session.query.filter_by(user_id=user.id, ip_address=ip_address).first()
+        if session:
+            db.session.delete(session)
     else:
-        user.last_logged_in = datetime.utcnow()
+        # Check if the user has reached the session limit
+        if active_sessions > user.session_limit:
+            return jsonify({'status': 'error', 'message': 'Session limit reached'}), 403
+
+        # Update or create the session for the given IP address
+        session = Session.query.filter_by(user_id=user.id, ip_address=ip_address).first()
+        if session:
+            session.last_seen = datetime.now()
+        else:
+            new_session = Session(user_id=user.id, ip_address=ip_address)
+            db.session.add(new_session)
 
     db.session.commit()
     return jsonify({'status': 'success'}), 200

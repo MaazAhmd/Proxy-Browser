@@ -23,10 +23,9 @@ class User(db.Model):
     password = db.Column(db.String(200), nullable=False)
     disabled_after = db.Column(db.DateTime, nullable=True)
     disabled = db.Column(db.Boolean, nullable=False, default=False)
-    last_logged_in = db.Column(db.DateTime, nullable=True)
+    session_limit = db.Column(db.Integer, nullable=False, default=1)
     proxy_id = db.Column(db.String(64), db.ForeignKey('proxy.id'), nullable=True)
     proxy = db.relationship('Proxy', back_populates='assigned_to_users')  # Relationship with Proxy
-    
     group_id = db.Column(db.String(32), db.ForeignKey('group.id'), nullable=True) 
     group = db.relationship('Group', back_populates='users')  # Relationship with Group
     
@@ -71,3 +70,14 @@ class Cookie(db.Model):
     def __init__(self, username, cookies):
         self.username = username
         self.cookies = cookies
+
+class Session(db.Model):
+    id = db.Column(db.String(64), primary_key=True, default=lambda: uuid4().hex)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', backref='sessions')
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now(datetime.UTC))
+    last_seen = db.Column(db.DateTime, default=datetime.datetime.now(datetime.UTC))
+    ip_address = db.Column(db.String(64), nullable=False)
+
+    def __repr__(self):
+        return f"Session({self.user_id}, {self.ip_address})"

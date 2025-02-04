@@ -157,7 +157,7 @@ class LoginDialog(QDialog):
 
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
-        api_url = "https://espotbrowser.onrender.com/proxy/get-proxy"
+        api_url = "http://127.0.0.1:5000/proxy/get-proxy"
         token = self.generate_jwt()
         headers = {'x-access-token': token}
         try:
@@ -192,7 +192,7 @@ class LoginDialog(QDialog):
 
     def send_heartbeat(self, login_status):
         """Send a heartbeat signal to the server."""
-        api_url = "https://espotbrowser.onrender.com/heartbeat"
+        api_url = "http://127.0.0.1:5000/heartbeat"
         headers = {'x-access-token': self.generate_jwt()}
         try:
             response = requests.post(api_url, json={"username": self.username, "status": login_status}, headers=headers)
