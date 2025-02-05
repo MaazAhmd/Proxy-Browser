@@ -269,4 +269,54 @@ def get_proxy():
         'disabled_after': user.disabled_after
     }
 
-    return jsonify({'status': 1, 'proxy_details': proxy_details, 'message': 'Login successful'}), 200
+    # Fetch content associated with the user
+    content = Content.query.filter_by(user_id=user.id).first()
+    if not content:
+        return jsonify({'status': 0, 'error_message': 'No content found for this user.'}), 200
+
+    content_details = {
+        'logo_url': content.logo_url,
+        'phone_number': content.phone_number,
+        'default_url': content.default_url
+    }
+
+    return jsonify({'status': 1, 'proxy_details': proxy_details, 'content_details': content_details, 'message': 'Login successful'}), 200
+
+
+
+@proxies_bp.route('/get-content', methods=['POST'])
+def get_content():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'status': 0, 'error_message': 'Username and password are required'}), 200
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'status': 0, 'error_message': 'Username not found'}), 200
+
+    if not check_password_hash(user.password, password):
+        return jsonify({'status': 0, 'error_message': 'Incorrect password'}), 200
+
+    if user.disabled:
+        return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Support.'}), 200
+
+    if user.disabled_after <= datetime.now():
+        user.disabled = True
+        db.session.commit()
+        return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Support.'}), 200
+
+    # Fetch content associated with the user
+    content = Content.query.filter_by(user_id=user.id).first()
+    if not content:
+        return jsonify({'status': 0, 'error_message': 'No content found for this user.'}), 200
+
+    content_details = {
+        'logo_url': content.logo_url,
+        'phone_number': content.phone_number,
+        'default_url': content.default_url
+    }
+
+    return jsonify({'status': 1, 'content_details': content_details, 'message': 'Content retrieval successful'}), 200

@@ -52,7 +52,22 @@ class Proxy(db.Model):
     port = db.Column(db.String(16), nullable=False)
     
     assigned_to_users = db.relationship('User', back_populates='proxy')
-    
+
+
+class Content(db.Model):
+    id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)  # 32-character UUID
+    logo_url = db.Column(db.Text, nullable=True)
+    phone_number = db.Column(db.String(20), nullable=True)
+    default_url = db.Column(db.String(255), nullable=True)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.id'), nullable=False)
+
+    def to_dict(self):
+        return {
+            "logo_url": self.logo_url,
+            "phone_number": self.phone_number,
+            "default_url": self.default_url,
+            "user_id": self.user_id
+        }
     
 class Group(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)

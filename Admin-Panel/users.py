@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required
 
-from models import db, User, Proxy
+from models import db, User, Proxy, Content
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 
@@ -81,6 +81,16 @@ def add_user():
             disabled_after=disabled_after
         )
         db.session.add(new_user)
+        db.session.commit()
+
+        # Add default content for the new user
+        default_content = Content(
+            logo_url='image_url',
+            phone_number='03204342479',
+            default_url='https://espotsolutions.com/',
+            user_id=new_user.id
+        )
+        db.session.add(default_content)
         db.session.commit()
 
         flash('User added successfully!', 'success')
