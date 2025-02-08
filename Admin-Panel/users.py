@@ -206,3 +206,21 @@ def assign_proxy():
         db.session.commit()
         return jsonify(success=True)
     return jsonify(success=False)
+
+@users_bp.route('/toggle_sync', methods=['POST'])
+@login_required
+def toggle_sync():
+    user_id = request.json.get('user_id')
+
+    if not user_id:
+        return jsonify({'success': False, 'message': 'Invalid user ID'}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+
+    # Toggle sync status
+    user.sync_data = not user.sync_data
+    db.session.commit()
+
+    return jsonify({'success': True, 'sync_data': user.sync_data, 'message': f'Sync turned {"on" if user.sync_data else "off"}'})

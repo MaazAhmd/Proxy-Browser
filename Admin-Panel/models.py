@@ -28,7 +28,8 @@ class User(db.Model):
     proxy = db.relationship('Proxy', back_populates='assigned_to_users')  # Relationship with Proxy
     group_id = db.Column(db.String(32), db.ForeignKey('group.id'), nullable=True) 
     group = db.relationship('Group', back_populates='users')  # Relationship with Group
-    
+    sync_data = db.Column(db.Boolean, nullable=True, default=False)
+
     def set_disabled_after(self, days, hours):
         """Set the disabled_after time based on days and hours"""
         self.disabled_after = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=days, hours=hours)
