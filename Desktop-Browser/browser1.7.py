@@ -136,9 +136,9 @@ class LoginDialog(QDialog):
         self.username = self.username_input.text()
         self.password = self.password_input.text()
         details = self.get_proxy_details(self.username, self.password)
-        proxy_details = details['proxy_details']
-        content_details = details['content_details']
-        if proxy_details:
+        if details and 'proxy_details' in details and 'content_details' in details:
+            proxy_details = details['proxy_details']
+            content_details = details['content_details']
             global proxy_url, proxy_port, proxy_user, proxy_password, default_url, sync_data
             proxy_url = proxy_details['proxy_url']
             proxy_port = proxy_details['proxy_port']
