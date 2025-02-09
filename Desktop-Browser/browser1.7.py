@@ -135,13 +135,17 @@ class LoginDialog(QDialog):
     def login(self):
         self.username = self.username_input.text()
         self.password = self.password_input.text()
-        proxy_details = self.get_proxy_details(self.username, self.password)
+        details = self.get_proxy_details(self.username, self.password)
+        proxy_details = details['proxy_details']
+        content_details = details['content_details']
         if proxy_details:
-            global proxy_url, proxy_port, proxy_user, proxy_password
+            global proxy_url, proxy_port, proxy_user, proxy_password, default_url, sync_data
             proxy_url = proxy_details['proxy_url']
             proxy_port = proxy_details['proxy_port']
             proxy_user = proxy_details['proxy_user']
             proxy_password = proxy_details['proxy_password']
+            sync_data = proxy_details['sync_data']
+            default_url = content_details['default_url']
             self.disabled_after = proxy_details['disabled_after']
             self.accept()
             self.start_heartbeat()
@@ -165,7 +169,7 @@ class LoginDialog(QDialog):
             if response.status_code == 200:
                 data = response.json()
                 if data['status'] == 1:
-                    return data['proxy_details']
+                    return data
                 else:
                     QMessageBox.critical(self, "Login Failed", data['error_message'])
                     return None
@@ -247,7 +251,8 @@ class SimpleBrowser(QMainWindow):
             print(f"Proxy set to {proxy_url}:{proxy_port}")
             self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
             self.start_session_timer()
-            threading.Thread(target=self.download_data_from_cloud, daemon=True).start()
+            if sync_data:
+                threading.Thread(target=self.download_data_from_cloud, daemon=True).start()
         else:
             sys.exit(app.exec())
 
@@ -367,25 +372,27 @@ class SimpleBrowser(QMainWindow):
         """Handle application close event with uploading in the background."""
         self.login_dialog.stop_heartbeat()
         self.cleanup_webengine_pages()
-
+        if(sync_data):
         # Show a dialog box indicating that data is being uploaded
-        self.msg_box = QMessageBox(self)
-        self.msg_box.setWindowTitle("Uploading Data")
-        self.msg_box.setText("Uploading your data to the cloud. The program will exit automatically.")
-        self.msg_box.setStandardButtons(QMessageBox.StandardButton.NoButton)
-        self.msg_box.show()
+            self.msg_box = QMessageBox(self)
+            self.msg_box.setWindowTitle("Uploading Data")
+            self.msg_box.setText("Uploading your data to the cloud. The program will exit automatically.")
+            self.msg_box.setStandardButtons(QMessageBox.StandardButton.NoButton)
+            self.msg_box.show()
 
-        # Start the upload in a separate thread
-        self.upload_thread = threading.Thread(target=self.upload_data_to_cloud)
-        self.upload_thread.start()
+            # Start the upload in a separate thread
+            self.upload_thread = threading.Thread(target=self.upload_data_to_cloud)
+            self.upload_thread.start()
 
-        # Use a QTimer to check if the upload is complete and close the application
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.check_upload_complete)
-        self.timer.start(1000)
+            # Use a QTimer to check if the upload is complete and close the application
+            self.timer = QTimer(self)
+            self.timer.timeout.connect(self.check_upload_complete)
+            self.timer.start(1000)
 
-        # Ignore the close event for now
-        event.ignore()
+            # Ignore the close event for now
+            event.ignore()
+        else:
+            event.accept()
 
     def check_upload_complete(self):
         """Check if the upload thread is complete."""
@@ -525,7 +532,7 @@ class SimpleBrowser(QMainWindow):
         """Open a new tab in the tab widget."""
         # Create a new WebEngineView for the tab
         browser_view = self._generateWebEngineView()
-        browser_view.setUrl(QUrl("https://espotsolutions.com/"))
+        browser_view.setUrl(QUrl(default_url if default_url else "https://espotsolutions.com/"))
         self.tabs.addTab(browser_view, "New Tab")
         self.tabs.setCurrentWidget(browser_view)
 

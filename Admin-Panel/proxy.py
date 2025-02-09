@@ -4,12 +4,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from uuid import uuid4
 
 from flask_login import login_required
-
-from models import db, Proxy, User
 import jwt
 import os
 from functools import wraps
-from models import db, Proxy, User, Group, Session
+from models import db, Proxy, User, Group, Session, Content
 from werkzeug.security import check_password_hash
 
 proxies_bp = Blueprint('proxy', __name__, url_prefix='/proxies')
@@ -251,7 +249,6 @@ def get_proxy():
 
     # Check the number of active sessions for the user
     active_sessions = Session.query.filter_by(user_id=user.id).count()
-    print(active_sessions, user.session_limit)
     if active_sessions >= user.session_limit:
         return jsonify({'status': 0, 'error_message': 'Session limit reached. Please close other sessions and try again.'}), 200
 
@@ -266,7 +263,8 @@ def get_proxy():
         'proxy_port': proxy.port,
         'proxy_user': proxy.username,
         'proxy_password': proxy.password,
-        'disabled_after': user.disabled_after
+        'disabled_after': user.disabled_after,
+        'sync_data': user.sync_data
     }
 
     # Fetch content associated with the user
