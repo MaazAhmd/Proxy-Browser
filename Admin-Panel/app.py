@@ -93,27 +93,30 @@ def heartbeat():
 
     # Check the number of active sessions for the user
     active_sessions = Session.query.filter_by(user_id=user.id).count()
-
-    if login_status is False:
-        # Remove the session for the given IP address
-        session = Session.query.filter_by(user_id=user.id, ip_address=ip_address).first()
-        if session:
-            db.session.delete(session)
-    else:
-        # Check if the user has reached the session limit
-        if active_sessions > user.session_limit:
-            return jsonify({'status': 'error', 'message': 'Session limit reached'}), 403
-
-        # Update or create the session for the given IP address
-        session = Session.query.filter_by(user_id=user.id, ip_address=ip_address).first()
-        if session:
-            session.last_seen = datetime.now()
+    try:
+        if login_status is False:
+            # Remove the session for the given IP address
+            session = Session.query.filter_by(user_id=user.id, ip_address=ip_address).first()
+            if session:
+                db.session.delete(session)
         else:
-            new_session = Session(user_id=user.id, ip_address=ip_address)
-            db.session.add(new_session)
+            # Check if the user has reached the session limit
+            if active_sessions > user.session_limit:
+                return jsonify({'status': 'error', 'message': 'Session limit reached'}), 403
 
-    db.session.commit()
-    return jsonify({'status': 'success'}), 200
+            # Update or create the session for the given IP address
+            session = Session.query.filter_by(user_id=user.id, ip_address=ip_address).first()
+            if session:
+                session.last_seen = datetime.now()
+            else:
+                new_session = Session(user_id=user.id, ip_address=ip_address)
+                db.session.add(new_session)
+        db.session.commit()
+        return jsonify({'status': 'success'}), 200
+    except Exception as e:
+        print(e)
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'An error occurred'}), 500
 
 # Generic error handler for all exceptions
 @app.errorhandler(500)
