@@ -224,3 +224,23 @@ def toggle_sync():
     db.session.commit()
 
     return jsonify({'success': True, 'sync_data': user.sync_data, 'message': f'Sync turned {"on" if user.sync_data else "off"}'})
+
+@users_bp.route("/update-session-limit", methods=["POST"])
+def update_session_limit():
+    user_id = request.form.get("user_id")
+    session_limit = request.form.get("session_limit")
+
+    if not user_id or not session_limit:
+        return jsonify({"success": False, "message": "Invalid input"}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"success": False, "message": "User not found"}), 404
+
+    try:
+        user.session_limit = int(session_limit)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Session limit updated successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
