@@ -8,10 +8,12 @@ import jwt
 import os
 from functools import wraps
 from models import db, Proxy, User, Group, Session, Content
+from datetime import datetime, timedelta
 from werkzeug.security import check_password_hash
 
 proxies_bp = Blueprint('proxy', __name__, url_prefix='/proxies')
 
+SESSION_TIMEOUT = timedelta(seconds=90)
 
 # List all proxies
 @proxies_bp.route('/', methods=['GET'])
@@ -247,10 +249,15 @@ def get_proxy():
     if not proxy:
         return jsonify({'status': 0, 'error_message': 'Your account configuration is incomplete. Contact support'}), 200
 
+    expired_sessions = Session.query.filter_by(user_id=user.id).filter(Session.last_seen < datetime.now() - SESSION_TIMEOUT).all()
+    for session in expired_sessions:
+        db.session.delete(session)
+    db.session.commit()
+
     # Check the number of active sessions for the user
     active_sessions = Session.query.filter_by(user_id=user.id).count()
     if active_sessions >= user.session_limit:
-        return jsonify({'status': 0, 'error_message': 'Session limit reached. Please close other sessions and try again.'}), 200
+        return jsonify({'status': 0, 'error_message': 'Session limit reached. Please close other sessions and try again in a minute.'}), 200
 
     # Create a new session for the user
     ip_address = request.remote_addr

@@ -21,8 +21,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QHBoxLayout,
-    QWidget
 )
 from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings, QWebEngineProfile
 from PyQt6.QtWebChannel import QWebChannel
@@ -161,7 +159,7 @@ class LoginDialog(QDialog):
 
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
-        api_url = "http://127.0.0.1:5000/proxy/get-proxy"
+        api_url = "https://proxy-browser-test.onrender.com/proxy/get-proxy"
         token = self.generate_jwt()
         headers = {'x-access-token': token}
         try:
@@ -196,7 +194,7 @@ class LoginDialog(QDialog):
 
     def send_heartbeat(self, login_status):
         """Send a heartbeat signal to the server."""
-        api_url = "http://127.0.0.1:5000/heartbeat"
+        api_url = "https://proxy-browser-test.onrender.com/heartbeat"
         headers = {'x-access-token': self.generate_jwt()}
         try:
             response = requests.post(api_url, json={"username": self.username, "status": login_status}, headers=headers)
@@ -272,9 +270,6 @@ class SimpleBrowser(QMainWindow):
         self.tabs.tabCloseRequested.connect(self.close_tab)
         self.tabs.setMovable(True)  # Allow rearranging tabs
         self.setCentralWidget(self.tabs)
-
-        # # Add "+" button to the tab bar
-        # self.add_new_tab_button()
 
         # Navigation bar (Back, Forward, Reload buttons)
         navbar = QToolBar("Navigation")
@@ -408,27 +403,6 @@ class SimpleBrowser(QMainWindow):
             if browser_view:
                 browser_view.setPage(None)
                 browser_view.deleteLater()
-
-    def add_new_tab_button(self):
-        """Add a '+' button right next to the tabs on the right side."""
-        # Create a layout for the custom tab bar
-        custom_tab_bar_layout = QHBoxLayout()
-        custom_tab_bar_layout.setContentsMargins(0, 0, 0, 0)  # No margin
-
-        # Add the "+" button
-        new_tab_button = QPushButton("+", self)
-        new_tab_button.setFixedSize(30, 30)
-        new_tab_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        new_tab_button.clicked.connect(self.new_tab)
-
-        # Add the "+" button to the layout
-        custom_tab_bar_layout.addWidget(new_tab_button, alignment=Qt.AlignmentFlag.AlignRight)  # Align button to the right
-
-        # Create a custom widget to hold the layout
-        custom_widget = QWidget()
-        custom_widget.setLayout(custom_tab_bar_layout)
-        # Add the custom widget to the tab bar
-        self.tabs.setCornerWidget(custom_widget, Qt.Corner.TopRightCorner)
 
     def start_session_timer(self):
         """Start a timer to check session expiration every minute."""
