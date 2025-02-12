@@ -137,13 +137,14 @@ class LoginDialog(QDialog):
         if details and 'proxy_details' in details and 'content_details' in details:
             proxy_details = details['proxy_details']
             content_details = details['content_details']
-            global proxy_url, proxy_port, proxy_user, proxy_password, default_url, sync_data
+            global proxy_url, proxy_port, proxy_user, proxy_password, default_url, sync_data, closing_dialog
             proxy_url = proxy_details['proxy_url']
             proxy_port = proxy_details['proxy_port']
             proxy_user = proxy_details['proxy_user']
             proxy_password = proxy_details['proxy_password']
             sync_data = proxy_details['sync_data']
             default_url = content_details['default_url']
+            closing_dialog = content_details['closing_dialog']
             self.disabled_after = proxy_details['disabled_after']
             self.accept()
             self.start_heartbeat()
@@ -371,7 +372,7 @@ class SimpleBrowser(QMainWindow):
         # Show a dialog box indicating that data is being uploaded
             self.msg_box = QMessageBox(self)
             self.msg_box.setWindowTitle("Uploading Data")
-            self.msg_box.setText("Uploading your data to the cloud. The program will exit automatically.")
+            self.msg_box.setText(closing_dialog if closing_dialog else "Uploading your data to the cloud. The program will exit automatically.")
             self.msg_box.setStandardButtons(QMessageBox.StandardButton.NoButton)
             self.msg_box.show()
 

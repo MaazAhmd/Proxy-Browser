@@ -242,12 +242,17 @@ def get_proxy():
         db.session.commit()
         return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Espot Solutions.'}), 200
 
+    content = Content.query.filter_by(user_id=user.id).first()
+
+    if not content:
+        return jsonify({'status': 0, 'error_message': 'No content found for this user.'}), 200
+
     if not user.proxy_id:
-        return jsonify({'status': 0, 'error_message': 'Your account configuration is incomplete. Contact support'}), 200
+        return jsonify({'status': 0, 'error_message': content.unassigned_proxy_error if content.unassigned_proxy_error else 'Your account configuration is incomplete. Contact support'}), 200
 
     proxy = Proxy.query.get(user.proxy_id)
     if not proxy:
-        return jsonify({'status': 0, 'error_message': 'Your account configuration is incomplete. Contact support'}), 200
+        return jsonify({'status': 0, 'error_message': content.unassigned_proxy_error if content.unassigned_proxy_error else 'Your account configuration is incomplete. Contact support'}), 200
 
     expired_sessions = Session.query.filter_by(user_id=user.id).filter(Session.last_seen < datetime.now() - SESSION_TIMEOUT).all()
     for session in expired_sessions:
@@ -275,14 +280,11 @@ def get_proxy():
     }
 
     # Fetch content associated with the user
-    content = Content.query.filter_by(user_id=user.id).first()
-    if not content:
-        return jsonify({'status': 0, 'error_message': 'No content found for this user.'}), 200
-
     content_details = {
         'logo_url': content.logo_url,
         'phone_number': content.phone_number,
-        'default_url': content.default_url
+        'default_url': content.default_url,
+        'closing_dialog': content.closing_dialog,
     }
 
     return jsonify({'status': 1, 'proxy_details': proxy_details, 'content_details': content_details, 'message': 'Login successful'}), 200
