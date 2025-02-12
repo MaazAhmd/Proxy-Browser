@@ -60,6 +60,8 @@ class Content(db.Model):
     logo_url = db.Column(db.Text, nullable=True)
     phone_number = db.Column(db.String(20), nullable=True)
     default_url = db.Column(db.String(255), nullable=True)
+    closing_dialog = db.Column(db.Text, nullable=True)
+    unassigned_proxy_error_dialog = db.Column(db.Text, nullable=True)
     user_id = db.Column(db.String(32), db.ForeignKey('user.id'), nullable=False)
 
     def to_dict(self):
@@ -67,7 +69,9 @@ class Content(db.Model):
             "logo_url": self.logo_url,
             "phone_number": self.phone_number,
             "default_url": self.default_url,
-            "user_id": self.user_id
+            "user_id": self.user_id,
+            "closing_dialog": self.closing_dialog,
+            "unassigned_proxy_error_dialog": self.unassigned_proxy_error_dialog
         }
     
 class Group(db.Model):
