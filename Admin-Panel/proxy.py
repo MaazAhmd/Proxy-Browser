@@ -248,11 +248,11 @@ def get_proxy():
         return jsonify({'status': 0, 'error_message': 'No content found for this user.'}), 200
 
     if not user.proxy_id:
-        return jsonify({'status': 0, 'error_message': content.unassigned_proxy_error if content.unassigned_proxy_error else 'Your account configuration is incomplete. Contact support'}), 200
+        return jsonify({'status': 0, 'error_message': content.unassigned_proxy_error_dialog if content.unassigned_proxy_error_dialog else 'Your account configuration is incomplete. Contact support'}), 200
 
     proxy = Proxy.query.get(user.proxy_id)
     if not proxy:
-        return jsonify({'status': 0, 'error_message': content.unassigned_proxy_error if content.unassigned_proxy_error else 'Your account configuration is incomplete. Contact support'}), 200
+        return jsonify({'status': 0, 'error_message': content.unassigned_proxy_error_dialog if content.unassigned_proxy_error_dialog else 'Your account configuration is incomplete. Contact support'}), 200
 
     expired_sessions = Session.query.filter_by(user_id=user.id).filter(Session.last_seen < datetime.now() - SESSION_TIMEOUT).all()
     for session in expired_sessions:
