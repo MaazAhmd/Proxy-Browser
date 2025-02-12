@@ -26,21 +26,21 @@ def edit_user_content(user_id):
     content = Content.query.filter_by(user_id=user_id).first()
 
     if request.method == 'POST':
-        logo_url = request.form.get('logo_url')
-        phone_number = request.form.get('phone_number')
+        # logo_url = request.form.get('logo_url')
+        # phone_number = request.form.get('phone_number')
         default_url = request.form.get('default_url')
         closing_dialog = request.form.get('closing_dialog')
         unassigned_proxy_error_dialog = request.form.get('unassigned_proxy_error_dialog')
 
         if content:
-            content.logo_url = logo_url
-            content.phone_number = phone_number
+            # content.logo_url = logo_url
+            # content.phone_number = phone_number
             content.default_url = default_url
             content.closing_dialog = closing_dialog
             content.unassigned_proxy_error_dialog = unassigned_proxy_error_dialog
 
         else:
-            content = Content(logo_url=logo_url, phone_number=phone_number, default_url=default_url, user_id=user_id, closing_dialog=closing_dialog, unassigned_proxy_error_dialog=unassigned_proxy_error_dialog)
+            content = Content(default_url=default_url, user_id=user_id, closing_dialog=closing_dialog, unassigned_proxy_error_dialog=unassigned_proxy_error_dialog)
             db.session.add(content)
 
         try:

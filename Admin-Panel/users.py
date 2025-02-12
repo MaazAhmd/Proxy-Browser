@@ -88,7 +88,7 @@ def add_user():
             logo_url='image_url',
             phone_number='03204342479',
             default_url='https://espotsolutions.com/',
-            closing_dialog='Uploading your data to the cloud. The program will exit automatically.',
+            closing_dialog='Closing, please wait.',
             unassigned_proxy_error_dialog='Your account configuration is incomplete. Contact support.',
             user_id=new_user.id
         )

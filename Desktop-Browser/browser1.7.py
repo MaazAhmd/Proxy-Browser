@@ -262,7 +262,7 @@ class SimpleBrowser(QMainWindow):
 
         self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Browser Window Setup
-        self.setWindowTitle("ESpot Browser")
+        self.setWindowTitle("Espot Browser")
         self.resize(1280, 800)
         profile = self._getProfile()
         # Tab Widget to manage multiple tabs
@@ -371,7 +371,7 @@ class SimpleBrowser(QMainWindow):
         if(sync_data):
         # Show a dialog box indicating that data is being uploaded
             self.msg_box = QMessageBox(self)
-            self.msg_box.setWindowTitle("Uploading Data")
+            self.msg_box.setWindowTitle("Info")
             self.msg_box.setText(closing_dialog if closing_dialog else "Uploading your data to the cloud. The program will exit automatically.")
             self.msg_box.setStandardButtons(QMessageBox.StandardButton.NoButton)
             self.msg_box.show()
