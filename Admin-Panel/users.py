@@ -246,3 +246,18 @@ def update_session_limit():
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
+
+
+@users_bp.route('/<string:user_id>/remove_proxy', methods=['POST'])
+@login_required
+def remove_proxy(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if user.proxy_id:
+        user.proxy_id = None  # Unassign proxy
+        db.session.commit()
+        flash("Proxy removed successfully.", "success")
+    else:
+        flash("User has no assigned proxy.", "warning")
+
+    return redirect(url_for('users.index'))  # Adjust the redirect as needed

@@ -99,6 +99,19 @@
                             data-sessionlimit="{{ user.session_limit }}">
                         <i class="fas fa-user-cog"></i> Set Session Limit
                     </button>
+                    <form
+                        action="{{ url_for('users.remove_proxy', user_id=user.id) }}"
+                        method="post"
+                        class="d-inline"
+                    >
+                        <button
+                            class="btn btn-secondary btn-sm"
+                            onclick="return confirm('Are you sure you want to remove the assigned proxy for this user?');"
+                        >
+                            Remove Proxy
+                        </button>
+                    </form>
+
                 </td>
             </tr>
 

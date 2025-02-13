@@ -30,6 +30,8 @@ class User(db.Model):
     group = db.relationship('Group', back_populates='users')  # Relationship with Group
     sync_data = db.Column(db.Boolean, nullable=True, default=False)
 
+    contents = db.relationship('Content', backref='user', cascade="all, delete", passive_deletes=True)
+
     def set_disabled_after(self, days, hours):
         """Set the disabled_after time based on days and hours"""
         self.disabled_after = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=days, hours=hours)
@@ -62,7 +64,7 @@ class Content(db.Model):
     default_url = db.Column(db.String(255), nullable=True)
     closing_dialog = db.Column(db.Text, nullable=True)
     unassigned_proxy_error_dialog = db.Column(db.Text, nullable=True)
-    user_id = db.Column(db.String(32), db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.id', ondelete="CASCADE"), nullable=False)
 
     def to_dict(self):
         return {
