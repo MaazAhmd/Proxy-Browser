@@ -98,7 +98,7 @@ class Cookie(db.Model):
 class Session(db.Model):
     id = db.Column(db.String(64), primary_key=True, default=lambda: uuid4().hex)
     user_id = db.Column(db.String(32), db.ForeignKey('user.id', ondelete="CASCADE"), nullable=False)
-    user = db.relationship('User', backref='sessions', cascade="all, delete", passive_deletes=True)
+    # user = db.relationship('User', backref='sessions', cascade="all, delete", passive_deletes=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.now(datetime.UTC))
     last_seen = db.Column(db.DateTime, default=datetime.datetime.now(datetime.UTC))
     ip_address = db.Column(db.String(64), nullable=False)
