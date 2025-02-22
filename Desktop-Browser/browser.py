@@ -163,12 +163,7 @@ class Browser(QMainWindow):
         self.cleanup_webengine_pages()
         if(config.SYNC_DATA):
         # Show a dialog box indicating that data is being uploaded
-            self.msg_box = QMessageBox(self)
-            self.msg_box.setWindowTitle("Info")
-            self.msg_box.setText(config.CLOSING_DIALOG if config.CLOSING_DIALOG else "Uploading your data to the cloud. The program will exit automatically.")
-            self.msg_box.setStandardButtons(QMessageBox.StandardButton.NoButton)
-            self.msg_box.show()
-
+            self.hide()
             # Start the upload in a separate thread
             self.upload_thread = threading.Thread(target=self.cookies.upload_data_to_cloud)
             self.upload_thread.start()
@@ -187,7 +182,6 @@ class Browser(QMainWindow):
         """Check if the upload thread is complete."""
         if not self.upload_thread.is_alive():
             self.timer.stop()  # Stop the timer
-            self.msg_box.close()  # Close the message box
             QCoreApplication.exit()  # Exit the application
 
     def cleanup_webengine_pages(self):

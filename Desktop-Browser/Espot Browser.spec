@@ -2,11 +2,24 @@
 
 
 a = Analysis(
-    ['browser1.7.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets', 'assets')],
-    hiddenimports=[],
+    datas=[
+        ('assets', 'assets'),
+        ('globals.py', '.'),
+        ('login.py', '.'),
+        ('cookies.py', '.'),
+        ('events.py', '.'),
+        ('browser.py', '.')
+    ],
+    hiddenimports=[
+        'globals',
+        'login',
+        'cookies',
+        'events',
+        'browser',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -36,4 +49,15 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon='assets/logo.ico'
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='Espot Browser'
 )
