@@ -3,6 +3,8 @@ import threading
 import sys
 import requests
 import boto3
+import json
+import subprocess
 from PyQt6.QtWidgets import (
     QMainWindow,
     QTabWidget,
@@ -12,7 +14,7 @@ from PyQt6.QtWidgets import (
     QDialog,
     QLineEdit,
 )
-from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication
+from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication, QThread, pyqtSignal, QEventLoop
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtNetwork import QNetworkProxy
 from cookies import Cookies
@@ -30,9 +32,19 @@ class Browser(QMainWindow):
             aws_secret_access_key=config.CLOUDFLARE_SECRET_KEY,
             endpoint_url=config.CLOUDFLARE_ENDPOINT_URL
         )
-        # self.check_for_updates()
-        # Show login dialog
-        self.login_dialog = LoginDialog()
+        latest_version = self.check_for_updates()
+        if latest_version:
+            print(f"Mandatory update required! Updating to version {latest_version}...")
+            self.download_and_install_update()
+
+            # **Wait for update to finish before proceeding**
+            loop = QEventLoop()
+            self.update_thread.download_complete.connect(loop.quit)  # Exit loop when download is done
+            loop.exec()  # Blocks execution here until the update is complete
+
+            # After update completes, exit the app (installer will launch)
+            sys.exit(0)
+
         if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
             self.username = self.login_dialog.username
             self.cookies = Cookies(self.username, self._s3_client)
@@ -251,3 +263,67 @@ class Browser(QMainWindow):
                 print("Failed to connect through proxy.")
         except requests.RequestException as e:
             print("Error connecting through proxy:", e)
+
+    def check_for_updates(self):
+        """Checks the latest version from Cloudflare R2 and compares it with the current version."""
+        try:
+            # Fetch the version file from R2
+            response = self._s3_client.get_object(Bucket=config.VERSION_BUCKET_NAME, Key=config.CLOUD_VERSION_FILE)
+            version_data = json.loads(response['Body'].read().decode('utf-8'))
+            latest_version = version_data.get("version")
+
+            if latest_version and float(latest_version) != config.CURRENT_VERSION:
+                print(f"New version available: {latest_version}")
+                return latest_version
+            else:
+                print("You are running the latest version.")
+                return None
+        except Exception as e:
+            print(f"Error checking for updates: {e}")
+            return None
+
+    def download_and_install_update(self):
+        """Downloads the latest installer and runs it."""
+        try:
+            # Download the latest installer
+            self.update_msg_box = QMessageBox(None)
+            self.update_msg_box.setWindowTitle("Updating")
+            self.update_msg_box.setText("The browser is updating. Please wait...")
+            self.update_msg_box.setStandardButtons(QMessageBox.StandardButton.NoButton)
+            self.update_msg_box.setMinimumSize(300, 100)
+            self.update_msg_box.show()
+            installer_path = os.path.join(os.getcwd(), config.INSTALLER_FILE)
+            print(f"Downloading update to {installer_path}...")
+            self.update_thread = UpdateThread(self._s3_client)
+            self.update_thread.download_complete.connect(self.run_installer)  # When download is done, install
+            self.update_thread.start()
+
+        except Exception as e:
+            print(f"Error downloading the update: {e}")
+
+    def run_installer(self, installer_path):
+        """Runs the installer and closes the update message box."""
+        self.update_msg_box.close()  # Close update dialog
+        print("Download complete! Installing the update...")
+
+        # Run the installer silently
+        subprocess.Popen([installer_path, "/silent"], shell=True)
+
+        # Exit the app
+        sys.exit(0)
+
+class UpdateThread(QThread):
+    """Background thread for downloading updates to prevent UI freezing."""
+    download_complete = pyqtSignal(str)  # Signal to notify when download is done
+
+    def __init__(self, s3_client):
+        super().__init__()
+        self.s3_client = s3_client
+
+    def run(self):
+        try:
+            installer_path = os.path.join(os.getcwd(), config.INSTALLER_FILE)
+            self.s3_client.download_file(config.VERSION_BUCKET_NAME, config.INSTALLER_FILE, installer_path)
+            self.download_complete.emit(installer_path)  # Emit signal when download is done
+        except Exception as e:
+            print(f"Error downloading the update: {e}")
