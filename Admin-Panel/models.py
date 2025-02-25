@@ -11,10 +11,22 @@ class Admin(UserMixin, db.Model):
     username = db.Column(db.String(256), unique=True, nullable=False)
     email = db.Column(db.String(256), unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False)
-    
+    verified_devices = db.Column(db.Text, default="")  # Store verified device IDs
+
     def verify_password(self, password):
         return check_password_hash(self.password, password)
 
+    def is_device_verified(self, device_id):
+        if not self.verified_devices:
+            return None
+        return device_id in self.verified_devices.split(',')
+
+    def mark_device_verified(self, device_id):
+        if not self.is_device_verified(device_id):
+            if self.verified_devices:
+                self.verified_devices += f",{device_id}"
+            else:
+                self.verified_devices = device_id
 
 class User(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)
@@ -48,6 +60,10 @@ class User(db.Model):
     def __repr__(self):
         return self.username
     
+class TrustedDevice(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.id'), nullable=False)
+    device_id = db.Column(db.String(200), nullable=False, unique=True)
 
 class Proxy(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)  # 32-character UUID

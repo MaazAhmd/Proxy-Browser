@@ -15,6 +15,11 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QIcon, QPixmap
 from globals import config
+import hashlib
+import uuid
+import smtplib
+import random
+from email.mime.text import MIMEText
 
 class LoginDialog(QDialog):
     def __init__(self):
@@ -72,6 +77,7 @@ class LoginDialog(QDialog):
         self.contact_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.contact_label)
         self.setLayout(layout)
+        self.device_id = self.get_device_id()
 
         # Apply CSS styling
         self.setStyleSheet("""
@@ -108,13 +114,28 @@ class LoginDialog(QDialog):
             }
         """)
 
+
+    def get_device_id(self):
+        return hashlib.sha256(uuid.getnode().to_bytes(6, 'big')).hexdigest()
+
+
     def login(self):
         self.username = self.username_input.text()
         self.password = self.password_input.text()
+        # Fetch proxy details (your existing logic)
         details = self.get_proxy_details(self.username, self.password)
+
         if details and 'proxy_details' in details and 'content_details' in details:
             proxy_details = details['proxy_details']
             content_details = details['content_details']
+
+            # Check if 2FA is required
+            if details.get("requires_2fa") and not self.is_device_trusted():
+                self.send_2fa_code(details["email"])
+                if not self.verify_2fa():
+                    return  # Stop login if 2FA fails
+
+            # Save proxy details (existing logic)
             config.PROXY_URL = proxy_details['proxy_url']
             config.PROXY_PORT = proxy_details['proxy_port']
             config.PROXY_USER = proxy_details['proxy_user']
@@ -123,8 +144,59 @@ class LoginDialog(QDialog):
             config.DEFAULT_URL = content_details['default_url']
             config.CLOSING_DIALOG = content_details['closing_dialog']
             self.disabled_after = proxy_details['disabled_after']
+
+            # Remember this device after successful login
+            self.remember_device()
+
+            # Accept login and start heartbeat
             self.accept()
             self.start_heartbeat()
+        else:
+            QMessageBox.critical(self, "Login Failed", "Invalid username or password.")
+
+    def is_device_trusted(self):
+        response = requests.post(
+            "https://proxy-browser-test.onrender.com/check-device",
+            json={"username": self.username, "device_id": self.device_id}
+        )
+        return response.status_code == 200 and response.json().get("trusted", False)
+
+    def send_2fa_code(self, email):
+        self.otp_code = random.randint(100000, 999999)  # Generate a 6-digit OTP
+        msg = MIMEText(f"Your 2FA code is: {self.otp_code}")
+        msg['Subject'] = "Espot Browser 2FA Code"
+        msg['From'] = config.EMAIL_SENDER
+        msg['To'] = email
+
+        with smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT) as server:
+            server.starttls()
+            server.login(config.EMAIL_SENDER, config.EMAIL_PASSWORD)
+            server.sendmail(config.EMAIL_SENDER, email, msg.as_string())
+
+    def verify_2fa(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Enter 2FA Code")
+        layout = QVBoxLayout()
+
+        otp_input = QLineEdit()
+        otp_input.setPlaceholderText("Enter 6-digit code")
+        layout.addWidget(otp_input)
+
+        verify_button = QPushButton("Verify")
+        verify_button.clicked.connect(
+            lambda: dialog.accept() if otp_input.text() == str(self.otp_code) else QMessageBox.critical(self, "Error",
+                                                                                                        "Invalid 2FA code!"))
+        layout.addWidget(verify_button)
+
+        dialog.setLayout(layout)
+        dialog.exec()
+        return otp_input.text() == str(self.otp_code)
+
+    def remember_device(self):
+        requests.post(
+            "https://proxy-browser-test.onrender.com/remember-device",
+            json={"username": self.username, "device_id": self.device_id}
+        )
 
     def generate_jwt(self):
         """Generate a JWT token."""

@@ -1,3 +1,5 @@
+import random
+import string
 from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
@@ -7,9 +9,14 @@ from flask_login import login_required
 import jwt
 import os
 from functools import wraps
-from models import db, Proxy, User, Group, Session, Content
+from models import db, Proxy, User, Group, Session, Content, TrustedDevice
 from datetime import datetime, timedelta
 from werkzeug.security import check_password_hash
+from flask_mail import Message
+from auth import mail
+
+# OTP Storage (Temporary dictionary for development)
+otp_storage = {}
 
 proxies_bp = Blueprint('proxy', __name__, url_prefix='/proxies')
 
@@ -218,11 +225,67 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated
 
+
+
+def generate_otp():
+    """ Generate a 6-digit OTP """
+    return ''.join(random.choices(string.digits, k=6))
+
+@proxies_bp.route('/send-2fa', methods=['POST'])
+def send_2fa():
+    """ Send OTP to the user's email """
+    data = request.json
+    username = data.get("username")
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"status": 0, "error_message": "User not found"}), 200
+
+    # Generate OTP and store it temporarily
+    otp_code = generate_otp()
+    otp_storage[username] = otp_code
+
+    # Send email
+    msg = Message('Your 2FA Code', recipients=[user.email])
+    msg.body = f"Your 2FA code is: {otp_code}"
+    try:
+        mail.send(msg)
+        return jsonify({"status": 1, "message": "2FA code sent"}), 200
+    except Exception as e:
+        return jsonify({"status": 0, "error_message": str(e)}), 500
+
+@proxies_bp.route('/verify-2fa', methods=['POST'])
+def verify_2fa():
+    """ Verify the OTP entered by the user """
+    data = request.json
+    username = data.get("username")
+    otp_code = data.get("otp_code")
+    device_id = data.get("device_id")
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"status": 0, "error_message": "User not found"}), 200
+
+    # Check OTP
+    if otp_storage.get(username) == otp_code:
+        otp_storage.pop(username)  # Remove OTP after successful verification
+
+        # Mark device as trusted
+        if not TrustedDevice.query.filter_by(user_id=user.id, device_id=device_id).first():
+            new_device = TrustedDevice(user_id=user.id, device_id=device_id)
+            db.session.add(new_device)
+            db.session.commit()
+
+        return jsonify({"status": 1, "message": "2FA verified"}), 200
+    else:
+        return jsonify({"status": 0, "error_message": "Invalid OTP"}), 200
+
 @proxies_bp.route('/get-proxy', methods=['POST'])
 def get_proxy():
     data = request.json
     username = data.get('username')
     password = data.get('password')
+    device_id = data.get("device_id")  # New: Device ID for trusted devices
 
     if not username or not password:
         return jsonify({'status': 0, 'error_message': 'Username and password are required'}), 200
@@ -234,16 +297,15 @@ def get_proxy():
     if not check_password_hash(user.password, password):
         return jsonify({'status': 0, 'error_message': 'Incorrect password'}), 200
 
-    if user.disabled:
+    if user.disabled or (user.disabled_after and datetime.datetime.now() > user.disabled_after):
         return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Espot Solutions.'}), 200
 
-    if user.disabled_after <= datetime.now():
-        user.disabled = True
-        db.session.commit()
-        return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Espot Solutions.'}), 200
+    # 2FA Check: If the device is not trusted, request 2FA
+    trusted_device = TrustedDevice.query.filter_by(user_id=user.id, device_id=device_id).first()
+    if not trusted_device:
+        return jsonify({"status": 2, "error_message": "2FA required"}), 200  # Frontend should trigger 2FA request
 
     content = Content.query.filter_by(user_id=user.id).first()
-
     if not content:
         return jsonify({'status': 0, 'error_message': 'No content found for this user.'}), 200
 
@@ -254,12 +316,13 @@ def get_proxy():
     if not proxy:
         return jsonify({'status': 0, 'error_message': content.unassigned_proxy_error_dialog if content.unassigned_proxy_error_dialog else 'Your account configuration is incomplete. Contact support'}), 200
 
-    expired_sessions = Session.query.filter_by(user_id=user.id).filter(Session.last_seen < datetime.now() - SESSION_TIMEOUT).all()
+    # Remove expired sessions
+    expired_sessions = Session.query.filter_by(user_id=user.id).filter(Session.last_seen < datetime.datetime.now() - SESSION_TIMEOUT).all()
     for session in expired_sessions:
         db.session.delete(session)
     db.session.commit()
 
-    # Check the number of active sessions for the user
+    # Check active session limit
     active_sessions = Session.query.filter_by(user_id=user.id).count()
     if active_sessions >= user.session_limit:
         return jsonify({'status': 0, 'error_message': 'Session limit reached. Please close other sessions and try again in a minute.'}), 200
@@ -279,7 +342,6 @@ def get_proxy():
         'sync_data': user.sync_data
     }
 
-    # Fetch content associated with the user
     content_details = {
         'logo_url': content.logo_url,
         'phone_number': content.phone_number,
@@ -288,8 +350,6 @@ def get_proxy():
     }
 
     return jsonify({'status': 1, 'proxy_details': proxy_details, 'content_details': content_details, 'message': 'Login successful'}), 200
-
-
 
 @proxies_bp.route('/get-content', methods=['POST'])
 def get_content():
@@ -307,12 +367,7 @@ def get_content():
     if not check_password_hash(user.password, password):
         return jsonify({'status': 0, 'error_message': 'Incorrect password'}), 200
 
-    if user.disabled:
-        return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Support.'}), 200
-
-    if user.disabled_after <= datetime.now():
-        user.disabled = True
-        db.session.commit()
+    if user.disabled or (user.disabled_after and datetime.datetime.now() > user.disabled_after):
         return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Support.'}), 200
 
     # Fetch content associated with the user

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 from flask_migrate import Migrate
 from functools import wraps
-from auth import auth_bp
+from auth import auth_bp, mail
 from users import users_bp
 from proxy import proxies_bp
 from groups import groups_bp
@@ -54,6 +54,15 @@ app.register_blueprint(groups_bp, url_prefix='/groups')
 app.register_blueprint(cookie_api, url_prefix='/')
 app.register_blueprint(content_bp, url_prefix='/content')
 
+app.config['DEBUG'] = True  # Add this line
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
+
+mail.init_app(app)
 
 @app.route('/')
 @login_required
