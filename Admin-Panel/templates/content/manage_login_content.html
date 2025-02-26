@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="my-5">Manage Content for the Login Screen</h2>
+
+        <p><strong>Phone Number:</strong> {{ content.phone_number }}</p>
+        <p><strong>Logo URL:</strong> {{ content.logo_url }}</p>
+
+    <a href="{{ url_for('content.edit_login_content') }}" class="btn btn-primary my-4">Edit Content</a>
+</div>
+{% endblock %}

@@ -280,6 +280,7 @@ def verify_2fa():
     else:
         return jsonify({"status": 0, "error_message": "Invalid OTP"}), 200
 
+
 @proxies_bp.route('/get-proxy', methods=['POST'])
 def get_proxy():
     data = request.json
@@ -351,6 +352,7 @@ def get_proxy():
     }
 
     return jsonify({'status': 1, 'proxy_details': proxy_details, 'content_details': content_details, 'message': 'Login successful', 'requires_2fa': requires_2fa, 'email': user.email}), 200
+
 
 @proxies_bp.route('/get-content', methods=['POST'])
 def get_content():

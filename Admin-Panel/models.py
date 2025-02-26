@@ -93,7 +93,19 @@ class Content(db.Model):
             "closing_dialog": self.closing_dialog,
             "unassigned_proxy_error_dialog": self.unassigned_proxy_error_dialog
         }
-    
+
+
+class LoginPageContent(db.Model):
+    id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)  # 32-character UUID
+    logo_url = db.Column(db.Text, nullable=True, default='https://espotbrowser.onrender.com/static/images/logo.png')
+    phone_number = db.Column(db.String(20), nullable=True, default='03204342479')
+
+    def to_dict(self):
+        return {
+            "logo_url": self.logo_url,
+            "phone_number": self.phone_number,
+        }
+
 class Group(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)
     name = db.Column(db.String(100), unique=True, nullable=False)

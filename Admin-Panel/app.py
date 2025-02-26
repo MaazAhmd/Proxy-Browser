@@ -1,7 +1,7 @@
 from flask import Flask, render_template, flash, redirect, url_for, request, jsonify
 from datetime import datetime
 import jwt
-from models import db, User, Proxy, Admin, Session
+from models import db, User, Proxy, Admin, Session, LoginPageContent
 from flask_login import LoginManager, login_required
 from dotenv import load_dotenv
 import os
@@ -126,6 +126,24 @@ def heartbeat():
         print(e)
         db.session.rollback()
         return jsonify({'status': 'error', 'message': 'An error occurred'}), 500
+
+
+
+@app.route('/get-login-page-content', methods=['GET'])
+def get_login_page_content():
+    content = LoginPageContent.query.first()
+
+    if not content:
+        return jsonify({'status': 0, 'error_message': 'No content found.'}), 404
+
+    content_details = {
+        'logo_url': content.logo_url,
+        'phone_number': content.phone_number,
+    }
+
+    return jsonify({'status': 1, 'content_details': content_details}), 200
+
+
 
 # Generic error handler for all exceptions
 @app.errorhandler(500)

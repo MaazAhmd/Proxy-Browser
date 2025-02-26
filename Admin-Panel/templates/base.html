@@ -95,6 +95,14 @@
               Manage Groups
             </a>
           </li>
+            <li class="nav-item mb-2">
+            <a
+              class="nav-link {% if page == 'login-content' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
+              href="{{ url_for('content.manage_login_content') }}"
+            >
+              Manage Login Page
+            </a>
+          </li>
         </ul>
       </nav>
 

@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Espot Browser"
-#define MyAppVersion "1.0"
+#define MyAppVersion "2.0"
 #define MyAppPublisher "Espot Solutions"
 #define MyAppURL "https://espotsolutions.com/"
 #define MyAppExeName "Espot Browser.exe"
