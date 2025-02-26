@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QPushButton,
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QCoreApplication
 from PyQt6.QtGui import QIcon, QPixmap
 from globals import config
 import hashlib
@@ -31,6 +31,40 @@ class LoginDialog(QDialog):
         self.password = None
         self.disabled_after = None
         self.setFixedSize(400, 450)
+        self.device_id = self.get_device_id()
+        self.update_login_page_content()
+
+    def update_login_page_content(self):
+        """Fetch and update the login page content from the backend."""
+        print("Fetching login page content...")
+        try:
+            response = requests.get(f"{config.BASE_URL}/get-login-page-content")
+            if response.status_code == 200:
+                data = response.json()
+                print(data)
+                if data["status"] == 1:
+                    content_details = data["content_details"]
+                    logo_url = content_details["logo_url"]
+                    phone_number = content_details["phone_number"]
+                    # Initialize UI components after fetching data
+                    self.init_ui(logo_url, phone_number)
+                else:
+                    QMessageBox.warning(self, "Error", "Failed to fetch login page content.")
+                    self.reject()  # Close the dialog if data fetch fails
+                    QCoreApplication.exit()
+            else:
+                QMessageBox.warning(self, "Error", "Failed to fetch login page content.")
+                self.reject()  # Close the dialog if data fetch fails
+                QCoreApplication.exit()
+        except requests.RequestException as e:
+            print("Error fetching login page content:", e)
+            QMessageBox.warning(self, "Error", "Failed to fetch login page content.")
+            self.reject()  # Close the dialog if data fetch fails
+            QCoreApplication.exit()
+
+    def init_ui(self, logo_url, phone_number):
+        """Initialize the UI components with the fetched data."""
+
         layout = QVBoxLayout()
         if hasattr(sys, '_MEIPASS'):
             assets_path = os.path.join(sys._MEIPASS, 'assets')
@@ -40,7 +74,8 @@ class LoginDialog(QDialog):
         self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Add logo at the top
         self.logo_label = QLabel(self)
-        self.logo_pixmap = QPixmap(os.path.join(assets_path, "logo.png"))
+        self.logo_pixmap = QPixmap()
+        self.logo_pixmap.loadFromData(requests.get(logo_url).content)
         self.logo_pixmap = self.logo_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         self.logo_label.setPixmap(self.logo_pixmap)
         self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -48,7 +83,7 @@ class LoginDialog(QDialog):
         self.tagline_label = QLabel("Your Gateway to Business Excellence")
         self.tagline_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.tagline_label)
-        self.phone_label = QLabel("03204342479")
+        self.phone_label = QLabel(phone_number)
         self.phone_label.setCursor(Qt.CursorShape.IBeamCursor)
         self.phone_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.phone_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -71,15 +106,12 @@ class LoginDialog(QDialog):
         self.login_button.clicked.connect(self.login)
         self.login_button.setCursor(Qt.CursorShape.PointingHandCursor)
         layout.addWidget(self.login_button)
-        self.contact_label = QLabel("In case of issues, contact Espot Solutions at: 03204342479")
+        self.contact_label = QLabel(f"In case of issues, contact Espot Solutions at: {phone_number}")
         self.contact_label.setCursor(Qt.CursorShape.IBeamCursor)
         self.contact_label.setObjectName("contactLabel")
         self.contact_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.contact_label)
         self.setLayout(layout)
-        self.device_id = self.get_device_id()
-
-        self.base_url = "https://proxy-browser-test.onrender.com"
 
         # Apply CSS styling
         self.setStyleSheet("""
@@ -136,7 +168,6 @@ class LoginDialog(QDialog):
                 if not self.send_2fa(self.username):
                     return  # Stop login if 2FA fails
 
-            print("2fa passed.")
             # Save proxy details (existing logic)
             config.PROXY_URL = proxy_details['proxy_url']
             config.PROXY_PORT = proxy_details['proxy_port']
@@ -144,31 +175,28 @@ class LoginDialog(QDialog):
             config.PROXY_PASSWORD = proxy_details['proxy_password']
             config.SYNC_DATA = proxy_details['sync_data']
             config.DEFAULT_URL = content_details['default_url']
-            config.CLOSING_DIALOG = content_details['closing_dialog']
             self.disabled_after = proxy_details['disabled_after']
 
-            print("Remembering device.")
             # Remember this device after successful login
             self.remember_device()
 
             # Accept login and start heartbeat
             self.accept()
             self.start_heartbeat()
-            print("Login accepted.")
 
         else:
             QMessageBox.critical(self, "Login Failed", "Invalid username or password.")
 
     def is_device_trusted(self):
         response = requests.post(
-            f"{self.base_url}/proxy/check-device",
+            f"{config.BASE_URL}/proxy/check-device",
             json={"username": self.username, "device_id": self.device_id}
         )
         return response.status_code == 200 and response.json().get("trusted", False)
 
     def send_2fa(self, username):
         """Request server to send a 2FA code"""
-        response = requests.post(f"{self.base_url}/proxy/send-2fa", json={"username": username})
+        response = requests.post(f"{config.BASE_URL}/proxy/send-2fa", json={"username": username})
         data = response.json()
 
         if data["status"] == 1:
@@ -179,7 +207,7 @@ class LoginDialog(QDialog):
 
     def verify_2fa(self, username):
         """Show OTP input dialog and verify it"""
-        otp_dialog = TwoFADialog(username, self.device_id, self.base_url)
+        otp_dialog = TwoFADialog(username, self.device_id)
         if otp_dialog.exec() == QDialog.DialogCode.Accepted:
             QMessageBox.information(None, "Success", "2FA Verified!")
             return True
@@ -189,7 +217,7 @@ class LoginDialog(QDialog):
 
     def remember_device(self):
         requests.post(
-            f"{self.base_url}/proxy/remember-device",
+            f"{config.BASE_URL}/proxy/remember-device",
             json={"username": self.username, "device_id": self.device_id}
         )
 
@@ -206,7 +234,7 @@ class LoginDialog(QDialog):
 
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
-        api_url = f"{self.base_url}/proxy/get-proxy"
+        api_url = f"{config.BASE_URL}/proxy/get-proxy"
         token = self.generate_jwt()
         headers = {'x-access-token': token}
         try:
@@ -243,7 +271,7 @@ class LoginDialog(QDialog):
 
     def send_heartbeat(self, login_status):
         """Send a heartbeat signal to the server."""
-        api_url = f"{self.base_url}/heartbeat"
+        api_url = f"{config.BASE_URL}/heartbeat"
         headers = {'x-access-token': self.generate_jwt()}
         try:
             response = requests.post(api_url, json={"username": self.username, "status": login_status}, headers=headers)
@@ -261,11 +289,10 @@ class LoginDialog(QDialog):
             self.show_login_dialog()
 
 class TwoFADialog(QDialog):
-    def __init__(self, username, device_id, base_url):
+    def __init__(self, username, device_id):
         super().__init__()
         self.username = username
         self.device_id = device_id
-        self.base_url = base_url
 
         self.setWindowTitle("Two-Factor Authentication")
         self.setGeometry(600, 300, 300, 150)
@@ -284,7 +311,7 @@ class TwoFADialog(QDialog):
 
     def verify_otp(self):
         otp_code = self.otp_input.text()
-        response = requests.post(f"{self.base_url}/proxy/verify-2fa", json={"username": self.username, "otp_code": otp_code, "device_id": self.device_id})
+        response = requests.post(f"{config.BASE_URL}/proxy/verify-2fa", json={"username": self.username, "otp_code": otp_code, "device_id": self.device_id})
         data = response.json()
 
         if data["status"] == 1:

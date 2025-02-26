@@ -5,8 +5,8 @@ class Config:
     PROXY_PASSWORD = None
     DEFAULT_URL = None
     SYNC_DATA = None
-    CLOSING_DIALOG = None
     PROFILE = None
+    BASE_URL = "https://proxy-browser-test.onrender.com"
     COOKIE_BUCKET_NAME = "espotbrowser-cookies-data"
     VERSION_BUCKET_NAME = "espot-browser-latest-version"
     CLOUDFLARE_ACCESS_KEY = "194c275f97c43291f4cbc8b54376a2f0"
