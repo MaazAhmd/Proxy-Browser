@@ -45,6 +45,7 @@ class Browser(QMainWindow):
             # After update completes, exit the app (installer will launch)
             sys.exit(0)
 
+        self.login_dialog = LoginDialog()
         if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
             self.username = self.login_dialog.username
             self.cookies = Cookies(self.username, self._s3_client)
