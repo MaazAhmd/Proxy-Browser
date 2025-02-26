@@ -89,7 +89,7 @@ def token_required(f):
     return decorated
 
 @app.route('/heartbeat', methods=['POST'])
-@token_required
+# @token_required
 def heartbeat():
     data = request.json
     username = data.get('username')

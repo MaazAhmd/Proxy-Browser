@@ -79,6 +79,8 @@ class LoginDialog(QDialog):
         self.setLayout(layout)
         self.device_id = self.get_device_id()
 
+        self.base_url = "https://proxy-browser-test.onrender.com"
+
         # Apply CSS styling
         self.setStyleSheet("""
             QDialog {
@@ -131,10 +133,10 @@ class LoginDialog(QDialog):
 
             # Check if 2FA is required
             if details.get("requires_2fa") and not self.is_device_trusted():
-                self.send_2fa_code(details["email"])
-                if not self.verify_2fa():
+                if not self.send_2fa(self.username):
                     return  # Stop login if 2FA fails
 
+            print("2fa passed.")
             # Save proxy details (existing logic)
             config.PROXY_URL = proxy_details['proxy_url']
             config.PROXY_PORT = proxy_details['proxy_port']
@@ -145,58 +147,53 @@ class LoginDialog(QDialog):
             config.CLOSING_DIALOG = content_details['closing_dialog']
             self.disabled_after = proxy_details['disabled_after']
 
+            print("Remembering device.")
             # Remember this device after successful login
             self.remember_device()
 
             # Accept login and start heartbeat
             self.accept()
             self.start_heartbeat()
+            print("Login accepted.")
+
         else:
             QMessageBox.critical(self, "Login Failed", "Invalid username or password.")
 
     def is_device_trusted(self):
         response = requests.post(
-            "https://proxy-browser-test.onrender.com/check-device",
+            f"{self.base_url}/proxy/check-device",
             json={"username": self.username, "device_id": self.device_id}
         )
         return response.status_code == 200 and response.json().get("trusted", False)
 
-    def send_2fa_code(self, email):
-        self.otp_code = random.randint(100000, 999999)  # Generate a 6-digit OTP
-        msg = MIMEText(f"Your 2FA code is: {self.otp_code}")
-        msg['Subject'] = "Espot Browser 2FA Code"
-        msg['From'] = config.EMAIL_SENDER
-        msg['To'] = email
+    def send_2fa(self, username):
+        """Request server to send a 2FA code"""
+        response = requests.post(f"{self.base_url}/proxy/send-2fa", json={"username": username})
+        data = response.json()
 
-        with smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT) as server:
-            server.starttls()
-            server.login(config.EMAIL_SENDER, config.EMAIL_PASSWORD)
-            server.sendmail(config.EMAIL_SENDER, email, msg.as_string())
+        if data["status"] == 1:
+            QMessageBox.information(None, "2FA Code Sent", "Please check your email for the 2FA code.")
+            return self.verify_2fa(username)
+        else:
+            QMessageBox.critical(None, "Error", data["error_message"])
 
-    def verify_2fa(self):
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Enter 2FA Code")
-        layout = QVBoxLayout()
-
-        otp_input = QLineEdit()
-        otp_input.setPlaceholderText("Enter 6-digit code")
-        layout.addWidget(otp_input)
-
-        verify_button = QPushButton("Verify")
-        verify_button.clicked.connect(
-            lambda: dialog.accept() if otp_input.text() == str(self.otp_code) else QMessageBox.critical(self, "Error",
-                                                                                                        "Invalid 2FA code!"))
-        layout.addWidget(verify_button)
-
-        dialog.setLayout(layout)
-        dialog.exec()
-        return otp_input.text() == str(self.otp_code)
+    def verify_2fa(self, username):
+        """Show OTP input dialog and verify it"""
+        otp_dialog = TwoFADialog(username, self.device_id, self.base_url)
+        if otp_dialog.exec() == QDialog.DialogCode.Accepted:
+            QMessageBox.information(None, "Success", "2FA Verified!")
+            return True
+        else:
+            QMessageBox.critical(None, "Failed", "Invalid OTP or verification error.")
+            return False
 
     def remember_device(self):
         requests.post(
-            "https://proxy-browser-test.onrender.com/remember-device",
+            f"{self.base_url}/proxy/remember-device",
             json={"username": self.username, "device_id": self.device_id}
         )
+
+
 
     def generate_jwt(self):
         """Generate a JWT token."""
@@ -209,7 +206,7 @@ class LoginDialog(QDialog):
 
     def get_proxy_details(self, username, password):
         """Call the API to get proxy details."""
-        api_url = "https://proxy-browser-test.onrender.com/proxy/get-proxy"
+        api_url = f"{self.base_url}/proxy/get-proxy"
         token = self.generate_jwt()
         headers = {'x-access-token': token}
         try:
@@ -229,6 +226,8 @@ class LoginDialog(QDialog):
             QMessageBox.critical(self, "Login Failed", "Error connecting to the server.")
             return None
 
+
+
     def start_heartbeat(self):
         """Start a timer to send heartbeat signals to the server."""
         self.heartbeat_timer = QTimer(self)
@@ -244,7 +243,7 @@ class LoginDialog(QDialog):
 
     def send_heartbeat(self, login_status):
         """Send a heartbeat signal to the server."""
-        api_url = "https://proxy-browser-test.onrender.com/heartbeat"
+        api_url = f"{self.base_url}/heartbeat"
         headers = {'x-access-token': self.generate_jwt()}
         try:
             response = requests.post(api_url, json={"username": self.username, "status": login_status}, headers=headers)
@@ -260,3 +259,35 @@ class LoginDialog(QDialog):
             QMessageBox.warning(self, "Session Expired", "Your session has expired.")
             self.close()
             self.show_login_dialog()
+
+class TwoFADialog(QDialog):
+    def __init__(self, username, device_id, base_url):
+        super().__init__()
+        self.username = username
+        self.device_id = device_id
+        self.base_url = base_url
+
+        self.setWindowTitle("Two-Factor Authentication")
+        self.setGeometry(600, 300, 300, 150)
+
+        self.layout = QVBoxLayout()
+
+        self.otp_input = QLineEdit(self)
+        self.otp_input.setPlaceholderText("Enter OTP Code")
+        self.layout.addWidget(self.otp_input)
+
+        self.verify_button = QPushButton("Verify", self)
+        self.verify_button.clicked.connect(self.verify_otp)
+        self.layout.addWidget(self.verify_button)
+
+        self.setLayout(self.layout)
+
+    def verify_otp(self):
+        otp_code = self.otp_input.text()
+        response = requests.post(f"{self.base_url}/proxy/verify-2fa", json={"username": self.username, "otp_code": otp_code, "device_id": self.device_id})
+        data = response.json()
+
+        if data["status"] == 1:
+            self.accept()  # Close dialog and return success
+        else:
+            QMessageBox.warning(self, "Error", data["error_message"])

@@ -1,6 +1,5 @@
 import random
 import string
-from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from uuid import uuid4
@@ -10,7 +9,8 @@ import jwt
 import os
 from functools import wraps
 from models import db, Proxy, User, Group, Session, Content, TrustedDevice
-from datetime import datetime, timedelta
+from datetime import timedelta
+import datetime
 from werkzeug.security import check_password_hash
 from flask_mail import Message
 from auth import mail
@@ -236,10 +236,10 @@ def send_2fa():
     """ Send OTP to the user's email """
     data = request.json
     username = data.get("username")
-
     user = User.query.filter_by(username=username).first()
+    print(f'Sending email to username: {username} with email')
     if not user:
-        return jsonify({"status": 0, "error_message": "User not found"}), 200
+        return jsonify({"status": 0, "error_message": "User not found"}), 404
 
     # Generate OTP and store it temporarily
     otp_code = generate_otp()
@@ -301,9 +301,10 @@ def get_proxy():
         return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Espot Solutions.'}), 200
 
     # 2FA Check: If the device is not trusted, request 2FA
+    requires_2fa = False  # Frontend should trigger 2FA request
     trusted_device = TrustedDevice.query.filter_by(user_id=user.id, device_id=device_id).first()
     if not trusted_device:
-        return jsonify({"status": 2, "error_message": "2FA required"}), 200  # Frontend should trigger 2FA request
+        requires_2fa = True  # Frontend should trigger 2FA request
 
     content = Content.query.filter_by(user_id=user.id).first()
     if not content:
@@ -349,7 +350,7 @@ def get_proxy():
         'closing_dialog': content.closing_dialog,
     }
 
-    return jsonify({'status': 1, 'proxy_details': proxy_details, 'content_details': content_details, 'message': 'Login successful'}), 200
+    return jsonify({'status': 1, 'proxy_details': proxy_details, 'content_details': content_details, 'message': 'Login successful', 'requires_2fa': requires_2fa, 'email': user.email}), 200
 
 @proxies_bp.route('/get-content', methods=['POST'])
 def get_content():
@@ -382,3 +383,38 @@ def get_content():
     }
 
     return jsonify({'status': 1, 'content_details': content_details, 'message': 'Content retrieval successful'}), 200
+
+
+@proxies_bp.route('/remember-device', methods=['POST'])
+def remember_device():
+    """ Mark a device as trusted """
+    data = request.json
+    username = data.get("username")
+    device_id = data.get("device_id")
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Add device to trusted list if not already stored
+    if not TrustedDevice.query.filter_by(user_id=user.id, device_id=device_id).first():
+        new_device = TrustedDevice(user_id=user.id, device_id=device_id)
+        db.session.add(new_device)
+        db.session.commit()
+
+    return jsonify({"message": "Device remembered"}), 200
+
+@proxies_bp.route('/check-device', methods=['POST'])
+def check_device():
+    """ Check if a device is trusted for the given user """
+    data = request.json
+    username = data.get("username")
+    device_id = data.get("device_id")
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Check if the device is already trusted
+    trusted = TrustedDevice.query.filter_by(user_id=user.id, device_id=device_id).first()
+    return jsonify({"trusted": bool(trusted)}), 200
