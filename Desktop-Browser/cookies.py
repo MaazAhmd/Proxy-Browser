@@ -26,11 +26,13 @@ class Cookies:
         """Upload cache and storage data to Cloudflare."""
         self._upload_folder_to_cloud(self._CACHE_PATH, f"{self.username}/cache")
         self._upload_folder_to_cloud(self._STORAGE_PATH, f"{self.username}/storage")
+        print("Data uploaded successfully")
 
     def download_data_from_cloud(self):
         """Download cache and storage data from Cloudflare."""
         self._download_folder_from_cloud(self._CACHE_PATH, f"{self.username}/cache")
         self._download_folder_from_cloud(self._STORAGE_PATH, f"{self.username}/storage")
+        print("Data downloaded successfully")
 
     def _upload_file(self, file_path, key):
         try:
