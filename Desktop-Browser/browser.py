@@ -13,8 +13,11 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QDialog,
     QLineEdit,
+    QProgressBar,
+    QLabel,
+    QVBoxLayout
 )
-from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication, QThread, pyqtSignal, QEventLoop
+from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication, QThread, pyqtSignal, QEventLoop, Qt
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtNetwork import QNetworkProxy
 from cookies import Cookies
@@ -43,7 +46,7 @@ class Browser(QMainWindow):
             loop.exec()  # Blocks execution here until the update is complete
 
             # After update completes, exit the app (installer will launch)
-            sys.exit(0)
+            QCoreApplication.exit()
 
         self.login_dialog = LoginDialog()
         if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
@@ -57,7 +60,8 @@ class Browser(QMainWindow):
             if config.SYNC_DATA:
                 threading.Thread(target=self.cookies.download_data_from_cloud, daemon=True).start()
         else:
-            sys.exit()
+            print("Login failed. Exiting...")
+            sys.exit(0)
 
         if hasattr(sys, '_MEIPASS'):
             assets_path = os.path.join(sys._MEIPASS, 'assets')
@@ -237,7 +241,7 @@ class Browser(QMainWindow):
             self.disabled_after = login_dialog.disabled_after
             login_dialog.start_heartbeat()
         else:
-            sys.exit()
+            QCoreApplication.exit()
 
     def set_proxy(self):
         """Set up the proxy for the browser."""
@@ -285,37 +289,49 @@ class Browser(QMainWindow):
 
     def download_and_install_update(self):
         """Downloads the latest installer and runs it."""
-        try:
-            # Download the latest installer
-            self.update_msg_box = QMessageBox(None)
-            self.update_msg_box.setWindowTitle("Updating")
-            self.update_msg_box.setText("The browser is updating. Please wait...")
-            self.update_msg_box.setStandardButtons(QMessageBox.StandardButton.NoButton)
-            self.update_msg_box.setMinimumSize(300, 100)
-            self.update_msg_box.show()
-            installer_path = os.path.join(os.getcwd(), config.INSTALLER_FILE)
-            print(f"Downloading update to {installer_path}...")
-            self.update_thread = UpdateThread(self._s3_client)
-            self.update_thread.download_complete.connect(self.run_installer)  # When download is done, install
-            self.update_thread.start()
 
-        except Exception as e:
-            print(f"Error downloading the update: {e}")
+        self.update_dialog = UpdateDialog(self)
+        self.update_dialog.show()
+
+        # Start the update download in a separate thread
+        self.update_thread = UpdateThread(self._s3_client)
+        self.update_thread.download_progress.connect(self.update_dialog.update_progress)  # Update UI
+        self.update_thread.download_complete.connect(self.run_installer)
+        self.update_thread.start()
+        # installer_path = os.path.join(os.getcwd(), config.INSTALLER_FILE) # skip download for testing
+        # self.update_thread.download_complete.emit(installer_path)
+
+    def cancel_update(self):
+        """Gracefully stops the update process and exits the application."""
+        # Stop the update thread if running
+        if hasattr(self, "update_thread") and self.update_thread.isRunning():
+            self.update_thread.terminate()  # Immediately stop thread
+            self.update_thread.wait()  # Ensure thread fully stops
+
+        # Close the update dialog if it's open
+        if hasattr(self, "update_dialog") and self.update_dialog.isVisible():
+            self.update_dialog.close()
+
+        # Forcefully exit to prevent further execution
+        sys.exit(0)
 
     def run_installer(self, installer_path):
-        """Runs the installer and closes the update message box."""
-        self.update_msg_box.close()  # Close update dialog
+        """Runs the installer and closes the update dialog."""
+        self.update_dialog.user_closed = True
+
+        self.update_dialog.close()
         print("Download complete! Installing the update...")
 
         # Run the installer silently
         subprocess.Popen([installer_path, "/silent"], shell=True)
 
-        # Exit the app
+        # Exit the app after launching the installer
         sys.exit(0)
 
 class UpdateThread(QThread):
     """Background thread for downloading updates to prevent UI freezing."""
     download_complete = pyqtSignal(str)  # Signal to notify when download is done
+    download_progress = pyqtSignal(int)  # Signal to notify download progress
 
     def __init__(self, s3_client):
         super().__init__()
@@ -324,7 +340,56 @@ class UpdateThread(QThread):
     def run(self):
         try:
             installer_path = os.path.join(os.getcwd(), config.INSTALLER_FILE)
-            self.s3_client.download_file(config.VERSION_BUCKET_NAME, config.INSTALLER_FILE, installer_path)
+
+            self.bytes_transferred = 0  # Track cumulative progress
+
+            self.s3_client.download_file(
+                config.VERSION_BUCKET_NAME,
+                config.INSTALLER_FILE,
+                installer_path,
+                Callback=self.progress_callback
+            )
             self.download_complete.emit(installer_path)  # Emit signal when download is done
         except Exception as e:
             print(f"Error downloading the update: {e}")
+
+    def get_total_size(self, bucket_name, key):
+        response = self.s3_client.head_object(Bucket=bucket_name, Key=key)
+        return response['ContentLength']
+
+    def progress_callback(self, bytes_received):
+        """Handles the progress updates."""
+        self.bytes_transferred += bytes_received  # Track total downloaded bytes
+        total_size = self.get_total_size(config.VERSION_BUCKET_NAME, config.INSTALLER_FILE)
+        progress = int((self.bytes_transferred / total_size) * 100)
+        self.download_progress.emit(progress)
+
+class UpdateDialog(QDialog):
+    """Custom dialog to show update progress with a progress bar."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Updating")
+        self.setMinimumSize(400, 100)
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)  # Block interaction with main UI
+
+        layout = QVBoxLayout(self)
+        self.label = QLabel("Downloading update...", self)
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setValue(0)
+
+        layout.addWidget(self.label)
+        layout.addWidget(self.progress_bar)
+        self.user_closed = False
+
+    def update_progress(self, progress):
+        """Update the progress bar and label."""
+        self.progress_bar.setValue(progress)
+
+    def closeEvent(self, event):
+        """Handle window close event to cancel update."""
+        if not self.user_closed:
+            if self.parent():
+                print("Cancelling update...")
+                self.parent().cancel_update()
+        event.accept()  # Ensure dialog closes

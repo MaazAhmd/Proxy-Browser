@@ -13,7 +13,7 @@ class Config:
     CLOUDFLARE_SECRET_KEY = "562e52307799862466c2e92d6491d47e7ab226bacf85e8427694b43c378e3352"
     CLOUDFLARE_ENDPOINT_URL = "https://381f96a585f51192da401d83b4af0f89.r2.cloudflarestorage.com"
     SECRET_KEY = 'QR2vZ7ocC7JkF0b02Kd7a5slN92MYgvd'
-    CURRENT_VERSION = 2.0
+    CURRENT_VERSION = 3.0
     CLOUD_VERSION_FILE = "version.json"
     INSTALLER_FILE = "Setup - Espot Browser.exe"
 config = Config()

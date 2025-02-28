@@ -41,7 +41,6 @@ class LoginDialog(QDialog):
             response = requests.get(f"{config.BASE_URL}/get-login-page-content")
             if response.status_code == 200:
                 data = response.json()
-                print(data)
                 if data["status"] == 1:
                     content_details = data["content_details"]
                     logo_url = content_details["logo_url"]
