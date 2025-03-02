@@ -58,7 +58,9 @@ class Browser(QMainWindow):
             self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
             self.start_session_timer()
             if config.SYNC_DATA:
-                threading.Thread(target=self.cookies.download_data_from_cloud, daemon=True).start()
+                download_thread = threading.Thread(target=self.cookies.download_data_from_cloud, daemon=True)
+                download_thread.start()
+                download_thread.join()
         else:
             print("Login failed. Exiting...")
             sys.exit(0)
