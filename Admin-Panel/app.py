@@ -139,6 +139,8 @@ def get_login_page_content():
     content_details = {
         'logo_url': content.logo_url,
         'phone_number': content.phone_number,
+        'slogan': content.slogan,
+        'contact_line': content.contact_line
     }
 
     return jsonify({'status': 1, 'content_details': content_details}), 200

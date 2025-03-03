@@ -261,3 +261,22 @@ def remove_proxy(user_id):
         flash("User has no assigned proxy.", "warning")
 
     return redirect(url_for('users.index'))  # Adjust the redirect as needed
+
+
+@users_bp.route('/toggle_2fa', methods=['POST'])
+@login_required
+def toggle_2fa():
+    user_id = request.json.get('user_id')
+
+    if not user_id:
+        return jsonify({'success': False, 'message': 'Invalid user ID'}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+
+    # Toggle sync status
+    user.two_factor = not user.two_factor
+    db.session.commit()
+
+    return jsonify({'success': True, 'two_factor': user.two_factor, 'message': f'Two factor turned {"on" if user.two_factor else "off"}'})

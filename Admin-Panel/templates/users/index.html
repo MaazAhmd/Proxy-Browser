@@ -24,7 +24,9 @@
             <th>Email</th>
             <th>Active Until</th>
             <th>Assigned Proxy</th>
-            <th>Actions</th>
+            <th>Account Actions</th>
+            <th>Proxy</th>
+            <th>Session</th>
         </tr>
         </thead>
         <tbody>
@@ -73,6 +75,19 @@
                     >
                         Extend
                     </button>
+                    <a href="{{ url_for('content.manage_user_content', user_id=user.id) }}"
+                            class="btn btn-primary btn-sm mt-1"
+                    >Content</a>
+                    <button
+                            class="btn btn-sm btn-primary toggle-2fa-btn mt-1"
+                            data-id="{{ user.id }}"
+                            data-username="{{ user.username }}"
+                    >
+                        <i class="fas fa-2fa-alt"></i>
+                        {{ "Turn 2FA off" if user.two_factor else "Turn 2FA on" }}
+                    </button>
+                </td>
+                <td>
                     <button
                             class="btn btn-primary btn-sm assign-proxy-btn"
                             data-id="{{ user.id }}"
@@ -81,37 +96,33 @@
                     >
                         Assign Proxy
                     </button>
-                    <a
-                            href="{{ url_for('content.manage_user_content', user_id=user.id) }}"
-                            class="btn btn-primary btn-sm"
-                    >Manage Content</a
-                    >
-                    <button
-                            class="btn btn-sm btn-primary toggle-sync-btn"
-                            data-id="{{ user.id }}"
-                            data-username="{{ user.username }}"
-                    >
-                        <i class="fas fa-sync-alt"></i>
-                        {{ "Turn sync off" if user.sync_data else "Turn sync on" }}
-                    </button>
-                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#sessionLimitModal"
-                            data-id="{{ user.id }}" data-username="{{ user.username }}"
-                            data-sessionlimit="{{ user.session_limit }}">
-                        <i class="fas fa-user-cog"></i> Set Session Limit
-                    </button>
                     <form
                         action="{{ url_for('users.remove_proxy', user_id=user.id) }}"
                         method="post"
                         class="d-inline"
                     >
                         <button
-                            class="btn btn-secondary btn-sm"
+                            class="btn btn-danger btn-sm mt-1"
                             onclick="return confirm('Are you sure you want to remove the assigned proxy for this user?');"
                         >
                             Remove Proxy
                         </button>
                     </form>
-
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#sessionLimitModal"
+                            data-id="{{ user.id }}" data-username="{{ user.username }}"
+                            data-sessionlimit="{{ user.session_limit }}">
+                        <i class="fas fa-user-cog"></i> Set Session Limit
+                    </button>
+                     <button
+                            class="btn btn-sm btn-primary toggle-sync-btn mt-1"
+                            data-id="{{ user.id }}"
+                            data-username="{{ user.username }}"
+                    >
+                        <i class="fas fa-sync-alt"></i>
+                        {{ "Turn sync off" if user.sync_data else "Turn sync on" }}
+                    </button>
                 </td>
             </tr>
 
@@ -287,6 +298,32 @@
                         .catch(error => {
                             console.error("Error:", error);
                             alert("An error occurred while updating sync status.");
+                        });
+                });
+            });
+            document.querySelectorAll(".toggle-2fa-btn").forEach(button => {
+                button.addEventListener("click", function () {
+                    const userId = this.dataset.id;
+                    const buttonElement = this;
+
+                    fetch('/users/toggle_2fa', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({user_id: userId}),
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                buttonElement.textContent = data.two_factor ? "Turn 2FA off" : "Turn 2FA on";
+                            } else {
+                                alert(data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            alert("An error occurred while updating 2FA status.");
                         });
                 });
             });

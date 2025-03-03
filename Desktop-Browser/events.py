@@ -30,7 +30,7 @@ class Events:
         # Set User-Agent to mimic Chrome (bypasses some stricter CSPs)
         browser_view.page().setWebChannel(QWebChannel(browser_view.page()))
         browser_view.page().profile().setHttpUserAgent(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"
         )
         browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
         browser_view.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)

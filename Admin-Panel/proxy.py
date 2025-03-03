@@ -301,11 +301,13 @@ def get_proxy():
     if user.disabled or (user.disabled_after and datetime.datetime.now() > user.disabled_after):
         return jsonify({'status': 0, 'error_message': 'User Expired. Please Contact Espot Solutions.'}), 200
 
-    # 2FA Check: If the device is not trusted, request 2FA
-    requires_2fa = False  # Frontend should trigger 2FA request
-    trusted_device = TrustedDevice.query.filter_by(user_id=user.id, device_id=device_id).first()
-    if not trusted_device:
-        requires_2fa = True  # Frontend should trigger 2FA request
+    requires_2fa = False
+    if user.two_factor:
+        # 2FA Check: If the device is not trusted, request 2FA
+        trusted_device = TrustedDevice.query.filter_by(user_id=user.id, device_id=device_id).first()
+        if not trusted_device:
+            requires_2fa = True  # Frontend should trigger 2FA request
+
 
     content = Content.query.filter_by(user_id=user.id).first()
     if not content:

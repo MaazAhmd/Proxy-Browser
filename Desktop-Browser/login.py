@@ -45,8 +45,10 @@ class LoginDialog(QDialog):
                     content_details = data["content_details"]
                     logo_url = content_details["logo_url"]
                     phone_number = content_details["phone_number"]
+                    slogan = content_details["slogan"]
+                    contact_url = content_details["contact_url"]
                     # Initialize UI components after fetching data
-                    self.init_ui(logo_url, phone_number)
+                    self.init_ui(logo_url, phone_number, slogan, contact_url)
                 else:
                     QMessageBox.warning(self, "Error", "Failed to fetch login page content.")
                     self.reject()  # Close the dialog if data fetch fails
@@ -61,7 +63,7 @@ class LoginDialog(QDialog):
             self.reject()  # Close the dialog if data fetch fails
             QCoreApplication.exit()
 
-    def init_ui(self, logo_url, phone_number):
+    def init_ui(self, logo_url, phone_number, slogan, contact_line):
         """Initialize the UI components with the fetched data."""
 
         layout = QVBoxLayout()
@@ -79,7 +81,7 @@ class LoginDialog(QDialog):
         self.logo_label.setPixmap(self.logo_pixmap)
         self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.logo_label)
-        self.tagline_label = QLabel("Your Gateway to Business Excellence")
+        self.tagline_label = QLabel(f"{slogan}")
         self.tagline_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.tagline_label)
         self.phone_label = QLabel(phone_number)
@@ -89,13 +91,13 @@ class LoginDialog(QDialog):
         layout.addWidget(self.phone_label)
         # Username input
         self.username_label = QLabel("Username:")
-        self.username_input = QLineEdit("maaz1")
+        self.username_input = QLineEdit("")
         layout.addWidget(self.username_label)
         layout.addWidget(self.username_input)
 
         # Password input
         self.password_label = QLabel("Password:")
-        self.password_input = QLineEdit("1234")
+        self.password_input = QLineEdit("")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
@@ -105,7 +107,7 @@ class LoginDialog(QDialog):
         self.login_button.clicked.connect(self.login)
         self.login_button.setCursor(Qt.CursorShape.PointingHandCursor)
         layout.addWidget(self.login_button)
-        self.contact_label = QLabel(f"In case of issues, contact Espot Solutions at: {phone_number}")
+        self.contact_label = QLabel(f"{contact_line} {phone_number}")
         self.contact_label.setCursor(Qt.CursorShape.IBeamCursor)
         self.contact_label.setObjectName("contactLabel")
         self.contact_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)

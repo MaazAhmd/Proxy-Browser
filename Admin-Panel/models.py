@@ -41,6 +41,7 @@ class User(db.Model):
     group_id = db.Column(db.String(32), db.ForeignKey('group.id'), nullable=True) 
     group = db.relationship('Group', back_populates='users')  # Relationship with Group
     sync_data = db.Column(db.Boolean, nullable=True, default=False)
+    two_factor = db.Column(db.Boolean, nullable=True, default=False)
 
     contents = db.relationship('Content', backref='user', cascade="all, delete", passive_deletes=True)
 
@@ -99,11 +100,15 @@ class LoginPageContent(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)  # 32-character UUID
     logo_url = db.Column(db.Text, nullable=True, default='https://espotbrowser.onrender.com/static/images/logo.png')
     phone_number = db.Column(db.String(20), nullable=True, default='03204342479')
+    slogan = db.Column(db.Text, nullable=True, default='Your Gateway to Business Excellence')
+    contact_line = db.Column(db.Text, nullable=True, default='In case of issues, contact Espot Solutions at:')
 
     def to_dict(self):
         return {
             "logo_url": self.logo_url,
             "phone_number": self.phone_number,
+            "slogan": self.slogan,
+            "contact_line": self.contact_line,
         }
 
 class Group(db.Model):
