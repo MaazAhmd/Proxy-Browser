@@ -134,7 +134,10 @@ def get_login_page_content():
     content = LoginPageContent.query.first()
 
     if not content:
-        return jsonify({'status': 0, 'error_message': 'No content found.'}), 404
+        content = LoginPageContent()
+        db.session.add(content)
+        db.session.commit()
+        # return jsonify({'status': 0, 'error_message': 'No content found.'}), 404
 
     content_details = {
         'logo_url': content.logo_url,

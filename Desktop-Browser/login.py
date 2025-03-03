@@ -46,7 +46,7 @@ class LoginDialog(QDialog):
                     logo_url = content_details["logo_url"]
                     phone_number = content_details["phone_number"]
                     slogan = content_details["slogan"]
-                    contact_url = content_details["contact_url"]
+                    contact_url = content_details["contact_line"]
                     # Initialize UI components after fetching data
                     self.init_ui(logo_url, phone_number, slogan, contact_url)
                 else:
