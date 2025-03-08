@@ -3,8 +3,7 @@ import shutil
 from concurrent.futures import ThreadPoolExecutor
 from botocore.exceptions import NoCredentialsError
 from PyQt6.QtWidgets import QMessageBox
-from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
-from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtWebEngineCore import QWebEngineProfile
 from globals import config
 
 class Cookies:

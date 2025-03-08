@@ -24,6 +24,7 @@ from cookies import Cookies
 from login import LoginDialog
 from events import Events
 from globals import config
+from PyQt6.QtWebEngineCore import QWebEngineProfile
 
 class Browser(QMainWindow):
     def __init__(self):
@@ -175,6 +176,12 @@ class Browser(QMainWindow):
 
         # Open a new tab when the browser starts
         events.new_tab()
+        self.set_user_agent()
+
+    def set_user_agent(self):
+        """Set a custom user-agent string for the browser."""
+        profile = QWebEngineProfile.defaultProfile()
+        profile.setHttpUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
     def closeEvent(self, event):
         """Handle application close event with uploading in the background."""
