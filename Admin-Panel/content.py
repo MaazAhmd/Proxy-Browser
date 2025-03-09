@@ -34,13 +34,17 @@ def edit_login_content():
     if request.method == 'POST':
         logo_url = request.form.get('logo_url')
         phone_number = request.form.get('phone_number')
+        slogan = request.form.get('slogan')
+        contact_line=  request.form.get('contact_line')
 
         if content:
             content.logo_url = logo_url
             content.phone_number = phone_number
+            content.slogan = slogan
+            content.contact_line = contact_line
 
         else:
-            content = LoginPageContent(logo_url=logo_url, phone_number=phone_number)
+            content = LoginPageContent(logo_url=logo_url, phone_number=phone_number, slogan=slogan, contact_line=contact_line)
             db.session.add(content)
 
         try:
