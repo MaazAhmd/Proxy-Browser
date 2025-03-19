@@ -7,15 +7,11 @@ a = Analysis(
     binaries=[],
     datas=[
         ('assets', 'assets'),
-        ('globals.py', '.'),
-        ('login.py', '.'),
         ('cookies.py', '.'),
         ('events.py', '.'),
         ('browser.py', '.')
     ],
     hiddenimports=[
-        'globals',
-        'login',
         'cookies',
         'events',
         'browser',
@@ -35,7 +31,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='Espot Browser',
+    name='Browser',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -59,5 +55,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='Espot Browser'
+    name='Browser'
 )
