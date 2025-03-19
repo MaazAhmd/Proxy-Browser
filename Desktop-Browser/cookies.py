@@ -6,12 +6,10 @@ from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtWebEngineCore import QWebEngineProfile
 
 class Cookies:
-    def __init__(self, profile):
-        self.profile = profile
+    def __init__(self):
         self._CACHE_PATH = os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming', 'Browser', 'cache')
         self._STORAGE_PATH = os.path.join(os.getenv('USERPROFILE'), 'AppData', 'Roaming', 'Browser', 'storage')
-        self._ensure_directories()
-        self._getProfile()
+        self.profile = self._getProfile()
 
     def _ensure_directories(self):
         """Ensure that the cache and storage directories exist."""
@@ -20,26 +18,23 @@ class Cookies:
         if not os.path.exists(self._STORAGE_PATH):
             os.makedirs(self._STORAGE_PATH)
 
-
     def _getProfile(self) -> QWebEngineProfile:
-        if self.profile is not None:
-            self._printProfileDetails()
-
         self._ensure_directories()
-        self.profile = QWebEngineProfile("MWVPersistentProfile")
-        self.profile.setCachePath(self._CACHE_PATH)
-        self.profile.setPersistentStoragePath(self._STORAGE_PATH)
-        self.profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
-        self.profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
+        profile = QWebEngineProfile("MWVPersistentProfile")
+        profile.setCachePath(self._CACHE_PATH)
+        profile.setPersistentStoragePath(self._STORAGE_PATH)
+        profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
+        profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
 
-        self._printProfileDetails()
+        self._printProfileDetails(profile)
+        return profile
 
-    def _printProfileDetails(self):
+    def _printProfileDetails(self, profile):
         print("***********************")
-        print(f"Storage Name: {self.profile.storageName()}")
-        print(f"Cache Path: {self.profile.cachePath()}")
-        print(f"Storage Path: {self.profile.persistentStoragePath()}")
-        print(f"Cache Type: {self.profile.httpCacheType()}")
-        print(f"Persistent Cookie Policy: {self.profile.persistentCookiesPolicy()}")
-        print(f"Off The Record: {self.profile.isOffTheRecord()}")
+        print(f"Storage Name: {profile.storageName()}")
+        print(f"Cache Path: {profile.cachePath()}")
+        print(f"Storage Path: {profile.persistentStoragePath()}")
+        print(f"Cache Type: {profile.httpCacheType()}")
+        print(f"Persistent Cookie Policy: {profile.persistentCookiesPolicy()}")
+        print(f"Off The Record: {profile.isOffTheRecord()}")
         print("***********************")

@@ -12,18 +12,17 @@ from PyQt6.QtWidgets import (
 from cookies import Cookies
 from events import Events
 
-profile = None
 class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.cookies = Cookies(profile)
-
+        self.cookies = Cookies()
+        self.profile = self.cookies.profile
         if hasattr(sys, '_MEIPASS'):
             assets_path = os.path.join(sys._MEIPASS, 'assets')
         else:
             assets_path = os.path.join(os.path.dirname(__file__), 'assets')
-        events = Events(profile)
+        events = Events(self.profile)
         self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Browser Window Setup
         self.setWindowTitle("Browser")

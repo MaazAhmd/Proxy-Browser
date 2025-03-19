@@ -16,6 +16,7 @@ class Events:
     def new_tab(self):
         """Open a new tab in the tab widget."""
         # Create a new WebEngineView for the tab
+        print(self.profile)
         browser_view = self._generateWebEngineView()
         browser_view.setUrl(QUrl(DEFAULT_URL))
         self.tabs.addTab(browser_view, "New Tab")
