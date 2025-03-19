@@ -19,6 +19,14 @@ def generate_otp():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # admins = Admin.query.all()
+    # for admin in admins:
+    #     db.session.delete(admin)
+    #     db.session.commit()
+    # password = generate_password_hash('Maaz1234', method='pbkdf2:sha256')
+    # new_admin = Admin(username='maaz', email='maazkhanahmad1@gmail.com', password=password)
+    # db.session.add(new_admin)
+    # db.session.commit()
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
