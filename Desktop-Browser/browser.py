@@ -1,12 +1,16 @@
 import os
 import sys
+import socket
 
+from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QIcon, QAction
+from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QHostInfo
 from PyQt6.QtWebEngineCore import QWebEngineProfile
+from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWidgets import (
     QMainWindow,
     QTabWidget,
-    QToolBar
+    QToolBar, QMessageBox, QApplication
 )
 
 from cookies import Cookies
@@ -15,6 +19,12 @@ from events import Events
 class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        self.internet = True
+        if not self.check_internet():
+            self.show_no_internet_dialog()
+            self.internet = False
+            return  # Stop execution if there's no internet
 
         self.cookies = Cookies()
         self.profile = self.cookies.profile
@@ -25,17 +35,19 @@ class Browser(QMainWindow):
         events = Events(self.profile)
         self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Browser Window Setup
-        self.setWindowTitle("Browser")
+        self.setWindowTitle("Free Counters")
         self.resize(1280, 800)
         # Tab Widget to manage multiple tabs
         self.tabs = QTabWidget(self)
+        self.tabs.tabBar().setVisible(False)
+
         self.tabs.setTabsClosable(False)
         self.setCentralWidget(self.tabs)
         events.tabs = self.tabs
 
         # Navigation bar (Reload button)
         navbar = QToolBar("Navigation")
-        self.addToolBar(navbar)
+        # self.addToolBar(navbar)
 
         # Reload button (SVG icon)
         reload_button = QAction(events.get_svg_icon(events.reload_icon_svg()), "Reload", self)
@@ -94,3 +106,21 @@ class Browser(QMainWindow):
     def closeEvent(self, event):
         """Handle application close event with uploading in the background."""
         event.accept()
+
+    def check_internet(self):
+        """Check if the internet connection is available."""
+        try:
+            socket.create_connection(("8.8.8.8", 53), timeout=8)  # Google's public DNS
+            return True
+        except OSError:
+            return False
+
+    def show_no_internet_dialog(self):
+        """Show an error dialog and close the application if there's no internet."""
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Icon.Critical)
+        msg_box.setWindowTitle("No Internet Connection")
+        msg_box.setText("Internet connection is not available. The browser will now close.")
+        msg_box.exec()  # Show the dialog
+        # self.close()  # Close the browser
+        QApplication.quit()

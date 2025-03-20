@@ -6,7 +6,7 @@ from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
 from PyQt6.QtWebEngineCore import QWebEngineSettings
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 
-DEFAULT_URL = "https://my.qt.io/"
+DEFAULT_URL = "http://www.statistics.005.free-counters.co.uk/?count=webmaster-tool"
 
 class Events:
     tabs = None
@@ -70,6 +70,9 @@ class Events:
         profile: QWebEngineProfile = self.profile if self.profile else QWebEngineProfile.defaultProfile()
         webPage: QWebEnginePage = QWebEnginePage(profile, webEngine)
         webEngine.setPage(webPage)
+
+        webEngine.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
+
         return webEngine
 
     def update_tab_title(self, browser_view, ok):

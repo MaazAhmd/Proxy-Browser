@@ -7,6 +7,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     browser = Browser()
-    browser.show()
-
-    app.exec()
+    if browser.internet:
+        browser.show()
+        app.exec()
