@@ -7,11 +7,14 @@ from flask_login import login_user, logout_user, current_user, login_required
 from models import db, Admin
 from werkzeug.security import generate_password_hash
 from flask_mail import Mail, Message
+from dotenv import load_dotenv
 
 auth_bp = Blueprint('auth', __name__)
 
 # Mail configuration
 mail = Mail()
+
+load_dotenv()
 
 def generate_otp():
     return ''.join(random.choices(string.digits, k=6))
@@ -19,14 +22,19 @@ def generate_otp():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    # admins = Admin.query.all()
-    # for admin in admins:
-    #     db.session.delete(admin)
-    #     db.session.commit()
-    # password = generate_password_hash('Maaz1234', method='pbkdf2:sha256')
-    # new_admin = Admin(username='maaz', email='maazkhanahmad1@gmail.com', password=password)
-    # db.session.add(new_admin)
-    # db.session.commit()
+    admin_email = os.getenv('ADMIN_EMAIL')
+    admin_password = os.getenv('ADMIN_PASSWORD')
+    admin_username = os.getenv('ADMIN_USERNAME')
+    admin = Admin.query.filter_by(email=admin_email).first()
+    if not admin:
+        try:
+            password = generate_password_hash(admin_password, method='pbkdf2:sha256')
+            new_admin = Admin(username=admin_username, email=admin_email, password=password)
+            db.session.add(new_admin)
+            db.session.commit()
+        except Exception as e:
+            flash("An error occurred while creating default admin.")
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
