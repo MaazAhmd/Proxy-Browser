@@ -63,6 +63,43 @@ class Events:
         # Connect urlChanged signal to update the search bar
         browser_view.urlChanged.connect(self.update_search_bar)
 
+        # Handle new window requests (open in new tab)
+        def handle_new_window(window_type):
+            new_view = self._generateWebEngineView()
+            # Configure new tab with same settings
+            new_view.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+            new_view.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
+            new_view.settings().setAttribute(QWebEngineSettings.WebAttribute.WebGLEnabled, True)
+            new_view.settings().setAttribute(QWebEngineSettings.WebAttribute.Accelerated2dCanvasEnabled, True)
+            new_view.settings().setAttribute(QWebEngineSettings.WebAttribute.AutoLoadImages, True)
+            new_view.settings().setAttribute(QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
+            new_view.settings().setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, True)
+            new_view.settings().setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, True)
+            
+            new_view.page().profile().setHttpUserAgent(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"
+            )
+            
+            new_view.page().featurePermissionRequested.connect(handle_permission_request)
+            
+            # Add tab
+            index = self.tabs.addTab(new_view, "New Tab")
+            self.tabs.setCurrentIndex(index)
+            
+            # Connect signals
+            new_view.loadFinished.connect(
+                lambda ok, view=new_view: self.update_tab_title(view, ok)
+            )
+            new_view.urlChanged.connect(self.update_search_bar)
+            
+            # Override createWindow for the new view too
+            new_view.createWindow = lambda wt: handle_new_window(wt)
+            
+            return new_view
+
+        # Override createWindow method to handle new window requests
+        browser_view.createWindow = handle_new_window
+
     def _generateWebEngineView(self, parent=None) -> QWebEngineView:
         webEngine: QWebEngineView = QWebEngineView(parent=parent)
         profile: QWebEngineProfile = config.PROFILE if config.PROFILE else QWebEngineProfile.defaultProfile()
