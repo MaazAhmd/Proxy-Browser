@@ -159,6 +159,8 @@ class LoginDialog(QDialog):
         self.password = self.password_input.text()
         # Fetch proxy details (your existing logic)
         details = self.get_proxy_details(self.username, self.password)
+        if not details:
+            return
 
         if details and 'proxy_details' in details and 'content_details' in details:
             proxy_details = details['proxy_details']
