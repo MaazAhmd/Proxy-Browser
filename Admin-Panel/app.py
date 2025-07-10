@@ -109,6 +109,7 @@ def heartbeat():
             if session:
                 db.session.delete(session)
         else:
+            print("This: ", active_sessions, user.session_limit)
             # Check if the user has reached the session limit
             if active_sessions > user.session_limit:
                 return jsonify({'status': 'error', 'message': 'Session limit reached'}), 403

@@ -64,7 +64,7 @@ class User(db.Model):
 class TrustedDevice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(32), db.ForeignKey('user.id'), nullable=False)
-    device_id = db.Column(db.String(200), nullable=False, unique=True)
+    device_id = db.Column(db.String(200), nullable=False)
 
 class Proxy(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)  # 32-character UUID
