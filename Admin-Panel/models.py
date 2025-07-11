@@ -63,7 +63,7 @@ class User(db.Model):
     
 class TrustedDevice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(32), db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     device_id = db.Column(db.String(200), nullable=False)
 
 class Proxy(db.Model):

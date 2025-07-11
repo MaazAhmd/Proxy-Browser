@@ -112,7 +112,8 @@ def heartbeat():
             print("This: ", active_sessions, user.session_limit)
             # Check if the user has reached the session limit
             if active_sessions > user.session_limit:
-                return jsonify({'status': 'error', 'message': 'Session limit reached'}), 403
+                # return jsonify({'status': 'error', 'message': 'Session limit reached'}), 403
+                print("Session limit exceeded")
 
             # Update or create the session for the given IP address
             session = Session.query.filter_by(user_id=user.id, ip_address=ip_address).first()
