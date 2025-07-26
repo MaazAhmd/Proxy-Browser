@@ -15,7 +15,9 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QProgressBar,
     QLabel,
-    QVBoxLayout
+    QVBoxLayout,
+    QSystemTrayIcon,
+    QMenu,
 )
 from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication, QThread, pyqtSignal, QEventLoop, Qt
 from PyQt6.QtGui import QIcon, QAction
@@ -178,31 +180,46 @@ class Browser(QMainWindow):
         events.new_tab()
         self.set_user_agent()
 
+        # Initialize system tray
+        self.force_quit = False
+        self.init_system_tray()
+
     def set_user_agent(self):
         """Set a custom user-agent string for the browser."""
         profile = QWebEngineProfile.defaultProfile()
         profile.setHttpUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
     def closeEvent(self, event):
-        """Handle application close event with uploading in the background."""
-        self.login_dialog.stop_heartbeat()
-        self.cleanup_webengine_pages()
-        if(config.SYNC_DATA):
-        # Show a dialog box indicating that data is being uploaded
-            self.hide()
-            # Start the upload in a separate thread
-            self.upload_thread = threading.Thread(target=self.cookies.upload_data_to_cloud)
-            self.upload_thread.start()
-
-            # Use a QTimer to check if the upload is complete and close the application
-            self.timer = QTimer(self)
-            self.timer.timeout.connect(self.check_upload_complete)
-            self.timer.start(1000)
-
-            # Ignore the close event for now
+        """Handle close event - minimize to tray instead of closing"""
+        if not self.force_quit and hasattr(self, 'tray_icon') and self.tray_icon.isVisible():
             event.ignore()
+            self.hide()
+            self.tray_icon.showMessage(
+                "Espot Browser",
+                "Application was minimized to tray",
+                QSystemTrayIcon.MessageIcon.Information,
+                2000
+            )
         else:
-            event.accept()
+            """Handle application close event with uploading in the background."""
+            self.login_dialog.stop_heartbeat()
+            self.cleanup_webengine_pages()
+            if(config.SYNC_DATA):
+            # Show a dialog box indicating that data is being uploaded
+                self.hide()
+                # Start the upload in a separate thread
+                self.upload_thread = threading.Thread(target=self.cookies.upload_data_to_cloud)
+                self.upload_thread.start()
+
+                # Use a QTimer to check if the upload is complete and close the application
+                self.timer = QTimer(self)
+                self.timer.timeout.connect(self.check_upload_complete)
+                self.timer.start(1000)
+
+                # Ignore the close event for now
+                event.ignore()
+            else:
+                event.accept()
 
     def check_upload_complete(self):
         """Check if the upload thread is complete."""
@@ -336,6 +353,55 @@ class Browser(QMainWindow):
 
         # Exit the app after launching the installer
         sys.exit(0)
+
+    def init_system_tray(self):
+        """Initialize system tray icon and menu"""
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            return
+        
+        # Create tray icon
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(self.windowIcon())
+        
+        # Create tray menu
+        tray_menu = QMenu()
+        
+        # Show action
+        show_action = tray_menu.addAction("Show")
+        show_action.triggered.connect(self.show_from_tray)
+        
+        # Hide action
+        hide_action = tray_menu.addAction("Hide")
+        hide_action.triggered.connect(self.hide)
+        
+        tray_menu.addSeparator()
+        
+        # Quit action
+        quit_action = tray_menu.addAction("Quit")
+        quit_action.triggered.connect(self.quit_application)
+        
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.activated.connect(self.tray_icon_activated)
+        self.tray_icon.show()
+    
+    def show_from_tray(self):
+        """Show window from system tray"""
+        self.show()
+        self.raise_()
+        self.activateWindow()
+    
+    def tray_icon_activated(self, reason):
+        """Handle tray icon activation"""
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            if self.isVisible():
+                self.hide()
+            else:
+                self.show_from_tray()
+    
+    def quit_application(self):
+        """Quit the application completely"""
+        self.force_quit = True
+        self.close()
 
 class UpdateThread(QThread):
     """Background thread for downloading updates to prevent UI freezing."""
