@@ -6,7 +6,7 @@ class Config:
     DEFAULT_URL = None
     SYNC_DATA = None
     PROFILE = None
-    BASE_URL = "https://espot-browser-v3-5.onrender.com/"
+    BASE_URL = "http://127.0.0.1:5000/"
     COOKIE_BUCKET_NAME = "espotbrowser-cookies-data"
     VERSION_BUCKET_NAME = "espot-browser-latest-version"
     CLOUDFLARE_ACCESS_KEY = "6cf9c0a917cc03005d53cbd9c29255db"

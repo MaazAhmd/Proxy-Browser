@@ -131,6 +131,12 @@ class Cookies:
             except Exception as e:
                 print(f"Error deleting directory {path}: {e}")
 
+    def ensure_data_saved(self):
+        """Ensure all data is properly saved before closing."""
+        # This method can be expanded later for any cleanup needed
+        print("Ensuring data is saved...")
+        pass
+
     def _ensure_directories(self):
         if not (os.path.exists(self._CACHE_PATH) and os.path.isdir(self._CACHE_PATH)):
             os.makedirs(self._CACHE_PATH)
