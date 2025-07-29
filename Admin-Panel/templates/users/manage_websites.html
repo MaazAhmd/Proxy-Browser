@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Manage Websites{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manage Websites for {{ user.username }}</h2>
+
+    <h5 class="mt-4">Currently Assigned Websites:</h5>
+    <ul class="list-group">
+        {% for website in websites %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ website.website }}
+                <form method="POST" action="{{ url_for('users.delete_website', user_id=user.id, website_id=website.id) }}">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+            </li>
+        {% else %}
+            <li class="list-group-item">No websites assigned yet.</li>
+        {% endfor %}
+    </ul>
+
+    <h5 class="mt-4">Add a New Website:</h5>
+    <form method="POST">
+        <div class="input-group">
+            <input type="text" name="website" class="form-control" placeholder="Enter website URL" required>
+            <button type="submit" class="btn btn-primary">Add</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

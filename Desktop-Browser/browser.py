@@ -271,13 +271,17 @@ class Browser(QMainWindow):
 
     def set_proxy(self):
         """Set up the proxy for the browser."""
-        proxy = QNetworkProxy()
-        proxy.setType(QNetworkProxy.ProxyType.HttpProxy)
-        proxy.setHostName(config.PROXY_URL)
-        proxy.setPort(int(config.PROXY_PORT))
-        proxy.setUser(config.PROXY_USER)
-        proxy.setPassword(config.PROXY_PASSWORD)
-        QNetworkProxy.setApplicationProxy(proxy)
+        try:
+            proxy = QNetworkProxy()
+            proxy.setType(QNetworkProxy.ProxyType.HttpProxy)
+            proxy.setHostName(config.PROXY_URL)
+            proxy.setPort(int(config.PROXY_PORT))
+            proxy.setUser(config.PROXY_USER)
+            proxy.setPassword(config.PROXY_PASSWORD)
+            QNetworkProxy.setApplicationProxy(proxy)
+        except Exception as e:
+            print("Error setting proxy:", e)
+            QMessageBox.critical(self, "Invalid Proxy", "Please check your proxy settings.")
 
     def check_proxy(self):
         """Check if the proxy is active by making a test request."""

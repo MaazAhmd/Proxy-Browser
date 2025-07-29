@@ -28,6 +28,7 @@ class Admin(UserMixin, db.Model):
             else:
                 self.verified_devices = device_id
 
+
 class User(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -36,8 +37,16 @@ class User(db.Model):
     disabled_after = db.Column(db.DateTime, nullable=True)
     disabled = db.Column(db.Boolean, nullable=False, default=False)
     session_limit = db.Column(db.Integer, nullable=False, default=1)
+    
     proxy_id = db.Column(db.String(64), db.ForeignKey('proxy.id'), nullable=True)
-    proxy = db.relationship('Proxy', back_populates='assigned_to_users')  # Relationship with Proxy
+    # proxy = db.relationship('Proxy', back_populates='assigned_to_users')  # Relationship with Proxy
+    proxy2_id = db.Column(db.String(64), db.ForeignKey('proxy.id'), nullable=True)
+    # proxy2 = db.relationship('Proxy', back_populates='assigned_to_users_2')  # Relationship with Proxy
+    proxy3_id = db.Column(db.String(64), db.ForeignKey('proxy.id'), nullable=True)
+    # proxy3 = db.relationship('Proxy', back_populates='assigned_to_users_3')  # Relationship with Proxy
+    proxy4_id = db.Column(db.String(64), db.ForeignKey('proxy.id'), nullable=True)
+    # proxy4 = db.relationship('Proxy', back_populates='assigned_to_users_4')  # Relationship with Proxy
+
     group_id = db.Column(db.String(32), db.ForeignKey('group.id'), nullable=True) 
     group = db.relationship('Group', back_populates='users')  # Relationship with Group
     sync_data = db.Column(db.Boolean, nullable=True, default=False)
@@ -57,14 +66,40 @@ class User(db.Model):
         if proxy:
             return proxy.host
         return None
+    
+    def get_proxy2_hostname(self):
+        proxy = Proxy.query.filter_by(id=self.proxy2_id).first()
+        if proxy:
+            return proxy.host
+        return None
+    
+    def get_proxy3_hostname(self):
+        proxy = Proxy.query.filter_by(id=self.proxy3_id).first()
+        if proxy:
+            return proxy.host
+        return None
+    
+    def get_proxy4_hostname(self):
+        proxy = Proxy.query.filter_by(id=self.proxy4_id).first()
+        if proxy:
+            return proxy.host
+        return None
 
     def __repr__(self):
         return self.username
     
+
+class SpecificWebsite(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    website = db.Column(db.String(256), nullable=False)
+    
+
 class TrustedDevice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(32), db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     device_id = db.Column(db.String(200), nullable=False)
+
 
 class Proxy(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)  # 32-character UUID
@@ -73,7 +108,10 @@ class Proxy(db.Model):
     host = db.Column(db.String(256), nullable=False)
     port = db.Column(db.String(16), nullable=False)
     
-    assigned_to_users = db.relationship('User', back_populates='proxy')
+    # assigned_to_users = db.relationship('User', back_populates='proxy')
+    # assigned_to_users_2 = db.relationship('User', back_populates='proxy2')
+    # assigned_to_users_3 = db.relationship('User', back_populates='proxy3')
+    # assigned_to_users_4 = db.relationship('User', back_populates='proxy4')
 
 
 class Content(db.Model):
@@ -111,6 +149,7 @@ class LoginPageContent(db.Model):
             "contact_line": self.contact_line,
         }
 
+
 class Group(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)
     name = db.Column(db.String(100), unique=True, nullable=False)
@@ -128,6 +167,7 @@ class Cookie(db.Model):
         self.username = username
         self.cookies = cookies
 
+
 class Session(db.Model):
     id = db.Column(db.String(64), primary_key=True, default=lambda: uuid4().hex)
     user_id = db.Column(db.String(32), db.ForeignKey('user.id', ondelete="CASCADE"), nullable=False)
@@ -138,3 +178,4 @@ class Session(db.Model):
 
     def __repr__(self):
         return f"Session({self.user_id}, {self.ip_address})"
+    

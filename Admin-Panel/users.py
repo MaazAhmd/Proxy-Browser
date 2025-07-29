@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required
 
-from models import db, User, Proxy, Content
+from models import SpecificWebsite, db, User, Proxy, Content
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 
@@ -197,6 +197,9 @@ def get_proxies():
 @login_required
 def assign_proxy():
     data = request.json
+    proxy_index = data['proxy_index']
+    if not proxy_index:
+        proxy_index = 1     # Default to proxy1 if not specified
     user_id = data['user_id']
     proxy_id = data['proxy_id']
 
@@ -204,7 +207,15 @@ def assign_proxy():
     proxy = Proxy.query.get(proxy_id)
 
     if user and proxy:
-        user.proxy = proxy
+        print(proxy_index, user.id, proxy.id)
+        if proxy_index == '1':
+            user.proxy_id = proxy_id
+        elif proxy_index == '2':
+            user.proxy2_id = proxy_id
+        elif proxy_index == '3':
+            user.proxy3_id = proxy_id
+        elif proxy_index == '4':
+            user.proxy4_id = proxy_id
         db.session.commit()
         return jsonify(success=True)
     return jsonify(success=False)
@@ -280,3 +291,31 @@ def toggle_2fa():
     db.session.commit()
 
     return jsonify({'success': True, 'two_factor': user.two_factor, 'message': f'Two factor turned {"on" if user.two_factor else "off"}'})
+
+
+@users_bp.route('/<user_id>/websites', methods=['GET', 'POST'])
+@login_required
+def manage_websites(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if request.method == 'POST':
+        website = request.form.get('website')
+        if website:
+            new_entry = SpecificWebsite(user_id=user_id, website=website)
+            db.session.add(new_entry)
+            db.session.commit()
+            flash("Website added successfully.", "success")
+        return redirect(url_for('users.manage_websites', user_id=user_id))
+
+    websites = SpecificWebsite.query.filter_by(user_id=user_id).all()
+    return render_template('users/manage_websites.html', user=user, websites=websites)
+
+
+@users_bp.route('/<user_id>/websites/delete/<int:website_id>', methods=['POST'])
+@login_required
+def delete_website(user_id, website_id):
+    website_entry = SpecificWebsite.query.filter_by(id=website_id, user_id=user_id).first_or_404()
+    db.session.delete(website_entry)
+    db.session.commit()
+    flash("Website deleted successfully.", "info")
+    return redirect(url_for('users.manage_websites', user_id=user_id))
