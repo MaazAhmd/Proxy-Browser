@@ -8,7 +8,7 @@ from flask_login import login_required
 import jwt
 import os
 from functools import wraps
-from models import db, Proxy, User, Group, Session, Content, TrustedDevice
+from models import SpecificWebsite, db, Proxy, User, Group, Session, Content, TrustedDevice
 from datetime import timedelta
 import datetime
 from werkzeug.security import check_password_hash
@@ -27,9 +27,6 @@ SESSION_TIMEOUT = timedelta(seconds=90)
 @login_required
 def index():
     proxies = Proxy.query.all()
-    for proxy in proxies:
-        print(proxy.assigned_to_users)
-
     return render_template('proxies/index.html', proxies=proxies, page='proxies')
 
 
@@ -320,6 +317,43 @@ def get_proxy():
     if not proxy:
         return jsonify({'status': 0, 'error_message': content.unassigned_proxy_error_dialog if content.unassigned_proxy_error_dialog else 'Your account configuration is incomplete. Contact support'}), 200
 
+    # Other proxies:
+    proxy2_details = {}
+    proxy3_details = {}
+    proxy4_details = {}
+
+    proxy2 = Proxy.query.get(user.proxy2_id)
+    if proxy2:
+        proxy2_details = {
+            'proxy_url': proxy2.host,
+            'proxy_port': proxy2.port,
+            'proxy_user': proxy2.username,
+            'proxy_password': proxy2.password,
+        }
+    
+    proxy3 = Proxy.query.get(user.proxy3_id)
+    if proxy3:
+        proxy3_details = {
+            'proxy_url': proxy3.host,
+            'proxy_port': proxy3.port,
+            'proxy_user': proxy3.username,
+            'proxy_password': proxy3.password,
+        }
+
+    proxy4 = Proxy.query.get(user.proxy4_id)
+    if proxy4:
+        proxy4_details = {
+            'proxy_url': proxy4.host,
+            'proxy_port': proxy4.port,
+            'proxy_user': proxy4.username,
+            'proxy_password': proxy4.password,
+        }
+
+    specific_websites = []
+    websites = SpecificWebsite.query.filter_by(user_id=user.id).all()
+    for website in websites:
+        specific_websites.append(website.website)
+
     # Remove expired sessions
     expired_sessions = Session.query.filter_by(user_id=user.id).filter(Session.last_seen < datetime.datetime.now() - SESSION_TIMEOUT).all()
     for session in expired_sessions:
@@ -352,8 +386,8 @@ def get_proxy():
         'default_url': content.default_url,
         'closing_dialog': content.closing_dialog,
     }
-
-    return jsonify({'status': 1, 'proxy_details': proxy_details, 'content_details': content_details, 'message': 'Login successful', 'requires_2fa': requires_2fa, 'email': user.email}), 200
+    print({'status': 1, 'proxy_details': proxy_details, 'proxy2_details': proxy2_details, 'proxy3_details': proxy3_details, 'proxy4_details': proxy4_details, 'websites': specific_websites, 'content_details': content_details, 'message': 'Login successful', 'requires_2fa': requires_2fa, 'email': user.email})
+    return jsonify({'status': 1, 'proxy_details': proxy_details, 'proxy2_details': proxy2_details, 'proxy3_details': proxy3_details, 'proxy4_details': proxy4_details, 'websites': specific_websites, 'content_details': content_details, 'message': 'Login successful', 'requires_2fa': requires_2fa, 'email': user.email}), 200
 
 
 @proxies_bp.route('/get-content', methods=['POST'])

@@ -24,6 +24,9 @@
             <th>Email</th>
             <th>Active Until</th>
             <th>Assigned Proxy</th>
+            <th>Assigned Proxy 2</th>
+            <th>Assigned Proxy 3</th>
+            <th>Assigned Proxy 4</th>
             <th>Account Actions</th>
             <th>Proxy</th>
             <th>Session</th>
@@ -42,6 +45,15 @@
                 </td>
                 <td>
                     {{ user.get_proxy_hostname() or 'Not Assigned' }}
+                </td>
+                <td>
+                    {{ user.get_proxy2_hostname() or 'Not Assigned' }}
+                </td>
+                <td>
+                    {{ user.get_proxy3_hostname() or 'Not Assigned' }}
+                </td>
+                <td>
+                    {{ user.get_proxy4_hostname() or 'Not Assigned' }}
                 </td>
                 <td>
                     <a
@@ -78,6 +90,9 @@
                     <a href="{{ url_for('content.manage_user_content', user_id=user.id) }}"
                             class="btn btn-primary btn-sm mt-1"
                     >Content</a>
+                    <a href="{{ url_for('users.manage_websites', user_id=user.id) }}"
+                            class="btn btn-primary btn-sm mt-1"
+                    >Manage Websites</a>
                     <button
                             class="btn btn-sm btn-primary toggle-2fa-btn mt-1"
                             data-id="{{ user.id }}"
@@ -91,10 +106,38 @@
                     <button
                             class="btn btn-primary btn-sm assign-proxy-btn"
                             data-id="{{ user.id }}"
+                            data-proxy-index="1"
                             data-username="{{ user.username }}"
                             data-proxy="{{ user.proxy }}"
                     >
                         Assign Proxy
+                    </button>
+                    <button
+                            class="btn btn-primary btn-sm assign-proxy-btn"
+                            data-id="{{ user.id }}"
+                            data-proxy-index="2"
+                            data-username="{{ user.username }}"
+                            data-proxy="{{ user.proxy2 }}"
+                    >
+                        Assign Proxy 2
+                    </button>
+                    <button
+                            class="btn btn-primary btn-sm assign-proxy-btn"
+                            data-id="{{ user.id }}"
+                            data-proxy-index="3"
+                            data-username="{{ user.username }}"
+                            data-proxy="{{ user.proxy3 }}"
+                    >
+                        Assign Proxy 3
+                    </button>
+                    <button
+                            class="btn btn-primary btn-sm assign-proxy-btn"
+                            data-id="{{ user.id }}"
+                            data-proxy-index="4"
+                            data-username="{{ user.username }}"
+                            data-proxy="{{ user.proxy4 }}"
+                    >
+                        Assign Proxy 4
                     </button>
                     <form
                         action="{{ url_for('users.remove_proxy', user_id=user.id) }}"
@@ -389,12 +432,16 @@
             const proxyList = document.getElementById('proxyList');
             const searchProxies = document.getElementById('searchProxies');
             let currentUserId = null;
+            let proxyIndex = null;
 
             // Attach click listeners to assign proxy buttons
             document.querySelectorAll('.assign-proxy-btn').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     currentUserId = btn.dataset.id;
+                    proxyIndex = btn.dataset.proxyIndex;
                     const username = btn.dataset.username;
+                    
+                    console.log(proxyIndex, currentUserId, username);
 
                     // Set modal title
                     document.getElementById('modalUsername').textContent = username;
@@ -430,7 +477,7 @@
                     fetch(`/users/assign_proxy`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({user_id: currentUserId, proxy_id: proxyId}),
+                        body: JSON.stringify({user_id: currentUserId, proxy_id: proxyId, proxy_index: proxyIndex}),
                     })
                         .then((response) => response.json())
                         .then((data) => {

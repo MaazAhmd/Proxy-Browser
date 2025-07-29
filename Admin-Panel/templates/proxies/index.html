@@ -12,7 +12,6 @@
       <th>Username</th>
       <th>Host</th>
       <th>Port</th>
-      <th>Assigned To</th>
       <th>Actions</th>
     </tr>
   </thead>
@@ -23,7 +22,6 @@
       <td>{{ proxy.username }}</td>
       <td>{{ proxy.host }}</td>
       <td>{{ proxy.port }}</td>
-      <td>{{ proxy.assigned_to_users or 'Unassigned' }}</td>
       <td>
         <a
           href="{{ url_for('proxy.edit_proxy', proxy_id=proxy.id) }}"
