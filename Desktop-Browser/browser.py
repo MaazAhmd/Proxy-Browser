@@ -20,6 +20,7 @@ from system_tray import SystemTrayManager
 from session_manager import SessionManager
 from web_engine_manager import WebEngineManager
 from ui_components import UIComponents
+from proxy_router import ProxyRouter
 
 
 class Browser(QMainWindow):
@@ -31,6 +32,7 @@ class Browser(QMainWindow):
         # Initialize managers
         self.update_manager = UpdateManager(self)
         self.system_tray_manager = SystemTrayManager(self)
+        self.proxy_router = ProxyRouter()
         
         # Check for updates first
         latest_version = self.update_manager.check_for_updates()
@@ -49,8 +51,19 @@ class Browser(QMainWindow):
             self.username = self.login_dialog.username
             self.cookies = Cookies(self.username, self.update_manager._s3_client)
             self.cookies._ensure_directories()
-            self.set_proxy()
-            print(f"Proxy set to {config.PROXY_URL}:{config.PROXY_PORT}")
+            
+            # Test and set initial proxy (general browsing proxy)
+            proxy_success = self.proxy_router._set_general_proxy()
+            if proxy_success:
+                current_proxy = self.proxy_router.get_current_proxy_type()
+                if current_proxy == "backup":
+                    self.show_proxy_switch_notification()
+                print(f"Using {current_proxy} proxy successfully for general browsing")
+                
+                # Print proxy configuration summary
+                self.proxy_router.print_configuration_summary()
+            else:
+                print("Warning: Both general proxies failed, continuing without proxy")
             
             # Initialize session manager
             self.session_manager = SessionManager(self, self.login_dialog)
@@ -100,7 +113,7 @@ class Browser(QMainWindow):
 
     def _setup_tabs(self):
         """Setup the tab widget."""
-        self.events = Events()
+        self.events = Events(self.proxy_router)
         self.tabs = QTabWidget(self)
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.events.close_tab)
@@ -136,16 +149,18 @@ class Browser(QMainWindow):
         self.events.search_bar = search_bar
 
     def set_proxy(self):
-        """Set up proxy configuration."""
-        if config.PROXY_URL and config.PROXY_PORT:
-            proxy = QNetworkProxy()
-            proxy.setType(QNetworkProxy.ProxyType.HttpProxy)
-            proxy.setHostName(config.PROXY_URL)
-            proxy.setPort(int(config.PROXY_PORT))
-            if config.PROXY_USER and config.PROXY_PASSWORD:
-                proxy.setUser(config.PROXY_USER)
-                proxy.setPassword(config.PROXY_PASSWORD)
-            QNetworkProxy.setApplicationProxy(proxy)
+        """Set up proxy configuration - deprecated, using SimpleProxyChecker now."""
+        # This method is kept for compatibility but SimpleProxyChecker handles proxy setup
+        pass
+
+    def show_proxy_switch_notification(self):
+        """Show notification when switched to backup proxy."""
+        if hasattr(self, 'system_tray_manager') and self.system_tray_manager.tray_icon:
+            self.system_tray_manager.show_message(
+                "Proxy Switched",
+                "Primary proxy failed, switched to backup proxy"
+            )
+        print("Switched to backup proxy due to primary proxy failure")
 
     def closeEvent(self, event):
         """Handle close event - minimize to tray instead of closing"""

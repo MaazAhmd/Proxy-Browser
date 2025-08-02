@@ -2,14 +2,16 @@ from PyQt6.QtCore import QUrl
 from globals import config
 from web_engine_manager import WebEngineManager
 from ui_components import IconProvider
+import time
 
 
 class Events:
     """Handles browser events and navigation."""
     
-    def __init__(self):
+    def __init__(self, proxy_router=None):
         self.tabs = None
         self.search_bar = None
+        self.proxy_router = proxy_router
 
     def new_tab(self):
         """Open a new tab in the tab widget."""
@@ -53,7 +55,34 @@ class Events:
 
         # Override createWindow method to handle new window requests
         browser_view.createWindow = handle_new_window
-
+    
+    def _check_and_set_proxy_for_url(self, url):
+        """Check if URL can be accessed and set appropriate proxy."""
+        # Check if URL can be accessed with available proxies
+        if not self.proxy_router.can_access_url(url):
+            proxy_info = self.proxy_router.get_proxy_info_for_url(url)
+            if proxy_info['is_special_website']:
+                print(f"❌ Cannot access {url}")
+                print("   This website requires special proxy access, but no special proxies are configured.")
+                print("   Please contact your administrator.")
+            else:
+                print(f"❌ Cannot access {url}")
+                print("   No general proxy configuration available.")
+            return False
+        
+        # Set appropriate proxy for this URL
+        success = self.proxy_router.set_proxy_for_url(url)
+        if not success:
+            proxy_info = self.proxy_router.get_proxy_info_for_url(url)
+            if proxy_info['is_special_website']:
+                print(f"❌ Failed to set up special proxy for {url}")
+                print("   All special proxies are non-functional.")
+            else:
+                print(f"❌ Failed to set up general proxy for {url}")
+                print("   All general proxies are non-functional.")
+            return False
+            
+        return True
     def update_search_bar(self, url):
         """Update the search bar text with the current URL."""
         if self.search_bar:
@@ -122,6 +151,10 @@ class Events:
                     else:
                         # Search query
                         query = f'https://www.google.com/search?q={query}'
+                
+                # Check and set appropriate proxy before navigation
+                if self.proxy_router and not self._check_and_set_proxy_for_url(query):
+                    return  # Don't navigate if proxy setup failed
                 
                 current_browser.setUrl(QUrl(query))
 

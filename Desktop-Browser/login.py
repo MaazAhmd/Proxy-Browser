@@ -37,7 +37,7 @@ class LoginDialog(QDialog):
         """Fetch and update the login page content from the backend."""
         print("Fetching login page content...")
         try:
-            response = requests.get(f"{config.BASE_URL}/content/login-page-content")
+            response = requests.get(f"{config.BASE_URL}/get-login-page-content")
             if response.status_code == 200:
                 data = response.json()
                 self.init_ui(
@@ -141,19 +141,67 @@ class LoginDialog(QDialog):
         if not details:
             QMessageBox.warning(self, "Login Failed", "Invalid username or password.")
             return
-
+        # print("Proxy details fetched successfully:", details)
         if details and 'proxy_details' in details and 'content_details' in details:
             proxy_details = details['proxy_details']
             content_details = details['content_details']
             
-            # Set configuration values
+            # Set primary proxy configuration values
             config.PROXY_URL = proxy_details.get('proxy_url')
             config.PROXY_PORT = proxy_details.get('proxy_port')
             config.PROXY_USER = proxy_details.get('proxy_user')
             config.PROXY_PASSWORD = proxy_details.get('proxy_password')
+            
+            # Set backup proxy configuration values if available
+            if 'proxy2_details' in details:
+                proxy2_details = details['proxy2_details']
+                config.BACKUP_PROXY_URL = proxy2_details.get('proxy_url')
+                config.BACKUP_PROXY_PORT = proxy2_details.get('proxy_port')
+                config.BACKUP_PROXY_USER = proxy2_details.get('proxy_user')
+                config.BACKUP_PROXY_PASSWORD = proxy2_details.get('proxy_password')
+            else:
+                # Clear backup proxy if not provided
+                config.BACKUP_PROXY_URL = None
+                config.BACKUP_PROXY_PORT = None
+                config.BACKUP_PROXY_USER = None
+                config.BACKUP_PROXY_PASSWORD = None
+            
+            # Set special proxy (Proxy 3) configuration values if available
+            if 'proxy3_details' in details:
+                proxy3_details = details['proxy3_details']
+                config.SPECIAL_PROXY_URL = proxy3_details.get('proxy_url')
+                config.SPECIAL_PROXY_PORT = proxy3_details.get('proxy_port')
+                config.SPECIAL_PROXY_USER = proxy3_details.get('proxy_user')
+                config.SPECIAL_PROXY_PASSWORD = proxy3_details.get('proxy_password')
+            else:
+                # Clear special proxy if not provided
+                config.SPECIAL_PROXY_URL = None
+                config.SPECIAL_PROXY_PORT = None
+                config.SPECIAL_PROXY_USER = None
+                config.SPECIAL_PROXY_PASSWORD = None
+            
+            # Set special backup proxy (Proxy 4) configuration values if available
+            if 'proxy4_details' in details:
+                proxy4_details = details['proxy4_details']
+                config.SPECIAL_BACKUP_PROXY_URL = proxy4_details.get('proxy_url')
+                config.SPECIAL_BACKUP_PROXY_PORT = proxy4_details.get('proxy_port')
+                config.SPECIAL_BACKUP_PROXY_USER = proxy4_details.get('proxy_user')
+                config.SPECIAL_BACKUP_PROXY_PASSWORD = proxy4_details.get('proxy_password')
+            else:
+                # Clear special backup proxy if not provided
+                config.SPECIAL_BACKUP_PROXY_URL = None
+                config.SPECIAL_BACKUP_PROXY_PORT = None
+                config.SPECIAL_BACKUP_PROXY_USER = None
+                config.SPECIAL_BACKUP_PROXY_PASSWORD = None
+            
+            # Set special websites array if available
+            if 'websites' in details:
+                config.SPECIAL_WEBSITES = details['websites'] if isinstance(details['websites'], list) else []
+            else:
+                config.SPECIAL_WEBSITES = []
+            
             config.DEFAULT_URL = content_details.get('default_url')
             config.SYNC_DATA = content_details.get('sync_data', False)
-            print(proxy_details)
             self.disabled_after = proxy_details.get('disabled_after')
             
             # Check if device is trusted
