@@ -167,6 +167,7 @@ class LoginDialog(QDialog):
             content_details = details['content_details']
 
             # Check if 2FA is required
+            print("Testing this 2fa thing: ", details.get("requires_2fa"))
             if details.get("requires_2fa") and not self.is_device_trusted():
                 if not self.send_2fa(self.username):
                     return  # Stop login if 2FA fails

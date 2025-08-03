@@ -40,14 +40,16 @@ class LoginDialog(QDialog):
             response = requests.get(f"{config.BASE_URL}/get-login-page-content")
             if response.status_code == 200:
                 data = response.json()
+                content_details = data.get('content_details')
                 self.init_ui(
-                    data.get('logo_url', ''),
-                    data.get('phone_number', 'Contact: +92 XXX XXXXXXX'),
-                    data.get('slogan', 'Welcome to Espot Browser'),
-                    data.get('contact_line', 'For Support Contact:')
+                    content_details.get('logo_url', ''),
+                    content_details.get('phone_number', 'Contact: +92 XXX XXXXXXX'),
+                    content_details.get('slogan', 'Welcome to Espot Browser'),
+                    content_details.get('contact_line', 'For Support Contact:')
                 )
             else:
                 # Fallback to default content
+                print("Login page content not fetched, resetting to default.")
                 self.init_ui('', 'Contact: +92 XXX XXXXXXX', 'Welcome to Espot Browser', 'For Support Contact:')
         except requests.RequestException as e:
             print(f"Error fetching login content: {e}")
@@ -206,22 +208,24 @@ class LoginDialog(QDialog):
             
             # Check if device is trusted
             if not self.auth_manager.is_device_trusted(self.username):
-                success, message = self.auth_manager.send_2fa(self.username)
-                if success:
-                    if self.verify_2fa():
-                        self.auth_manager.remember_device(self.username)
+                if details.get("requires_2fa"):
+                    success, message = self.auth_manager.send_2fa(self.username)
+                    if success:
+                        if self.verify_2fa():
+                            self.auth_manager.remember_device(self.username)
+                        else:
+                            QMessageBox.warning(self, "2FA Failed", "Two-factor authentication failed.")
+                            return
                     else:
-                        QMessageBox.warning(self, "2FA Failed", "Two-factor authentication failed.")
+                        QMessageBox.warning(self, "2FA Error", f"Could not send 2FA: {message}")
                         return
-                else:
-                    QMessageBox.warning(self, "2FA Error", f"Could not send 2FA: {message}")
-                    return
             
             # Start heartbeat
             self.auth_manager.start_heartbeat(self.username)
             self.accept()
         else:
-            QMessageBox.warning(self, "Login Failed", "Invalid response from server.")
+            print("Details: ", details)
+            QMessageBox.warning(self, "Login Failed", "Session Limit reached. Please try again in a few minutes.")
 
     def verify_2fa(self):
         """Show OTP input dialog and verify it"""

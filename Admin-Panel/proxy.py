@@ -234,7 +234,7 @@ def send_2fa():
     data = request.json
     username = data.get("username")
     user = User.query.filter_by(username=username).first()
-    print(f'Sending email to username: {username} with email')
+    print(f'Sending email to username: {username}.')
     if not user:
         return jsonify({"status": 0, "error_message": "User not found"}), 404
 
