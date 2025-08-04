@@ -5,7 +5,8 @@ import jwt
 import requests
 from PyQt6.QtCore import QTimer
 from globals import config
-
+import subprocess
+import platform
 
 class AuthenticationManager:
     """Handles authentication, JWT tokens, and heartbeat."""
@@ -15,7 +16,23 @@ class AuthenticationManager:
         
     def get_device_id(self):
         """Generate a unique device ID based on hardware."""
-        return hashlib.sha256(uuid.getnode().to_bytes(6, 'big')).hexdigest()
+        try:
+            if platform.system() == "Windows":
+                result = subprocess.run(['wmic', 'csproduct', 'get', 'UUID'], 
+                                    capture_output=True, text=True, shell=True)
+
+                lines = result.stdout.strip().split('\n')
+                
+                # Try to find the UUID in any line
+                for i, line in enumerate(lines):
+                    cleaned_line = line.strip()
+                    if cleaned_line and cleaned_line not in ['UUID', '']:
+                        return cleaned_line
+                return None
+                
+        except Exception as e:
+            print(f"Error getting hardware ID: {e}")
+            return None
 
     def generate_jwt(self):
         """Generate a JWT token."""
