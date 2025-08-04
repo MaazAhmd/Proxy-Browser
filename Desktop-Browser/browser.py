@@ -169,7 +169,7 @@ class Browser(QMainWindow):
             self.hide()
             self.system_tray_manager.show_message(
                 "Espot Browser",
-                "Application was minimized to tray"
+                "Application was minimized to tray",
             )
         else:
             # Handle cleanup and data upload

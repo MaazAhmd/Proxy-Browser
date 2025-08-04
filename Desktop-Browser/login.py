@@ -225,7 +225,8 @@ class LoginDialog(QDialog):
             self.accept()
         else:
             print("Details: ", details)
-            QMessageBox.warning(self, "Login Failed", "Session Limit reached. Please try again in a few minutes.")
+            error_message = details.get('error_message', 'Invalid response from server.') if isinstance(details, dict) else "Invalid response from server."
+            QMessageBox.warning(self, "Login Failed", error_message)
 
     def verify_2fa(self):
         """Show OTP input dialog and verify it"""

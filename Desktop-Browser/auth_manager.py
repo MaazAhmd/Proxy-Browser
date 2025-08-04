@@ -110,7 +110,7 @@ class AuthenticationManager:
         try:
             requests.post(api_url, headers=headers, json={
                 'username': username,
-                'login_status': login_status,
+                'status': login_status,
                 'device_id': self.get_device_id()
             }, timeout=10)
         except requests.RequestException as e:

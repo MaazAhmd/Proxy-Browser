@@ -94,7 +94,6 @@ def heartbeat():
     data = request.json
     username = data.get('username')
     login_status = data.get('status')
-    
     # Get the real client IP address
     def get_real_ip():
         # Check for common proxy headers in order of preference
@@ -120,12 +119,24 @@ def heartbeat():
     client_ip = get_real_ip()
     user_agent = request.headers.get('User-Agent', '')
     
-    # Create a more stable session identifier
-    # You can use either the IP only or combine with user agent for better uniqueness
-    session_identifier = f"{client_ip}_{hash(user_agent) % 10000}"  # Use hash to shorten user agent
+    # Create a stable device fingerprint using multiple factors
+    import hashlib
     
-    # Alternative: Use only IP if you prefer
-    # session_identifier = client_ip
+    # Combine multiple device characteristics for better device identification
+    device_info = f"{user_agent}|{request.headers.get('Accept-Language', '')}|{request.headers.get('Accept-Encoding', '')}"
+    
+    # Create a consistent hash using SHA256 (not affected by Python's hash randomization)
+    device_hash = hashlib.sha256(device_info.encode()).hexdigest()[:8]  # Use first 8 chars
+    
+    # Create session identifier with device fingerprint instead of changing IP
+    session_identifier = f"device_{device_hash}"
+    
+    # Debug: Print device fingerprinting info
+    print(f"Device info for {username}:")
+    print(f"  Device Hash: {device_hash}")
+    print(f"  Session ID: {session_identifier}")
+    print(f"  Client IP: {client_ip}")
+    print("=" * 50)
 
     user = User.query.filter_by(username=username).first()
     if not user:
@@ -140,13 +151,12 @@ def heartbeat():
             if session:
                 db.session.delete(session)
         else:
-            print("This: ", active_sessions, user.session_limit)
             # Check if the user has reached the session limit
             if active_sessions > user.session_limit:
                 # Check if current session already exists
                 existing_session = Session.query.filter_by(user_id=user.id, ip_address=session_identifier).first()
                 if not existing_session:
-                    return jsonify({'status': 'error', 'message': 'Session limit reached'}), 403
+                    return jsonify({'status': 'error', 'message': 'Session limit reached. Please close other sessions and try again in a minute.'}), 403
 
             # Update or create the session for the given session identifier
             session = Session.query.filter_by(user_id=user.id, ip_address=session_identifier).first()

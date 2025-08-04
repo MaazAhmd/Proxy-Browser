@@ -365,11 +365,6 @@ def get_proxy():
     if active_sessions >= user.session_limit:
         return jsonify({'status': 0, 'error_message': 'Session limit reached. Please close other sessions and try again in a minute.'}), 200
 
-    # Create a new session for the user
-    ip_address = request.remote_addr
-    new_session = Session(user_id=user.id, ip_address=ip_address)
-    db.session.add(new_session)
-    db.session.commit()
 
     proxy_details = {
         'proxy_url': proxy.host,
