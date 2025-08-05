@@ -297,6 +297,7 @@ def toggle_2fa():
 @login_required
 def manage_websites(user_id):
     user = User.query.get_or_404(user_id)
+    proxies = Proxy.query.all()
 
     if request.method == 'POST':
         website = request.form.get('website')
@@ -308,7 +309,40 @@ def manage_websites(user_id):
         return redirect(url_for('users.manage_websites', user_id=user_id))
 
     websites = SpecificWebsite.query.filter_by(user_id=user_id).all()
-    return render_template('users/manage_websites.html', user=user, websites=websites)
+    return render_template('users/manage_websites.html', user=user, websites=websites, proxies=proxies)
+
+
+@users_bp.route('/<user_id>/manage-optional-proxies', methods=['POST'])
+def manage_optional_proxies(user_id):
+    user = User.query.get_or_404(user_id)
+    proxy2_id = request.form.get('proxy2_id') or None
+    proxy3_id = request.form.get('proxy3_id') or None
+    proxy4_id = request.form.get('proxy4_id') or None
+
+    # Enforce logical assignment conditions
+    if proxy4_id and not proxy3_id:
+        flash("Cannot assign Proxy 4 without assigning Proxy 3.", "danger")
+        return redirect(request.url)
+    if proxy3_id and not proxy2_id:
+        flash("Cannot assign Proxy 3 without assigning Proxy 2.", "danger")
+        return redirect(request.url)
+
+    user.proxy2_id = proxy2_id
+    user.proxy3_id = proxy3_id
+    user.proxy4_id = proxy4_id
+    db.session.commit()
+    flash("Optional proxies updated successfully.", "success")
+    return redirect(url_for('users.manage_websites', user_id=user_id))
+
+@users_bp.route('/<user_id>/clear-optional-proxies', methods=['POST'])
+def clear_optional_proxies(user_id):
+    user = User.query.get_or_404(user_id)
+    user.proxy2_id = None
+    user.proxy3_id = None
+    user.proxy4_id = None
+    db.session.commit()
+    flash("All optional proxies removed.", "success")
+    return redirect(url_for('users.manage_websites', user_id=user.id))
 
 
 @users_bp.route('/<user_id>/websites/delete/<int:website_id>', methods=['POST'])

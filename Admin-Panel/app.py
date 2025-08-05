@@ -13,6 +13,7 @@ from proxy import proxies_bp
 from groups import groups_bp
 from cookie import cookie_api
 from content import content_bp
+from import_export import import_export_bp
 
 app = Flask(__name__)
 
@@ -53,6 +54,7 @@ app.register_blueprint(proxies_bp, url_prefix='/proxy')
 app.register_blueprint(groups_bp, url_prefix='/groups')
 app.register_blueprint(cookie_api, url_prefix='/')
 app.register_blueprint(content_bp, url_prefix='/content')
+app.register_blueprint(import_export_bp, url_prefix='/import_export')
 
 app.config['DEBUG'] = True  # Add this line
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'

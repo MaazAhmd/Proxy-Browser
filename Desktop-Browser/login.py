@@ -120,12 +120,20 @@ class LoginDialog(QDialog):
         self.login_button.clicked.connect(self.login)
         self.login_button.setCursor(Qt.CursorShape.PointingHandCursor)
         layout.addWidget(self.login_button)
-        
-        # Contact label
-        self.contact_label = QLabel(f"{contact_line} {phone_number}")
-        self.contact_label.setCursor(Qt.CursorShape.IBeamCursor)
+
+        # Construct the WhatsApp URL
+        whatsapp_url = f"https://wa.me/{phone_number.lstrip('+')}"  # wa.me requires numbers without '+'
+
+        # Create the label with hyperlink
+        self.contact_label = QLabel(f'{contact_line} <a href="{whatsapp_url}">{phone_number}</a>')
+        self.contact_label.setTextFormat(Qt.TextFormat.RichText)
+        self.contact_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextBrowserInteraction | Qt.TextInteractionFlag.LinksAccessibleByMouse
+        )
+        self.contact_label.setOpenExternalLinks(True)  # Open the link in browser
         self.contact_label.setObjectName("contactLabel")
-        self.contact_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+
+        # Add to layout
         layout.addWidget(self.contact_label)
         
         self.setLayout(layout)
@@ -225,7 +233,7 @@ class LoginDialog(QDialog):
             self.accept()
         else:
             print("Details: ", details)
-            error_message = details.get('error_message', 'Invalid response from server.') if isinstance(details, dict) else "Invalid response from server."
+            error_message = details.get('error_message', 'Invalid response from server.') if isinstance(details, dict) else "Please update your Espot browser to continue."
             QMessageBox.warning(self, "Login Failed", error_message)
 
     def verify_2fa(self):
