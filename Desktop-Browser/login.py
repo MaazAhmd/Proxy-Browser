@@ -17,9 +17,8 @@ from PyQt6.QtGui import QIcon, QPixmap
 from globals import config
 import hashlib
 import uuid
-import smtplib
-import random
-from email.mime.text import MIMEText
+import subprocess
+import platform
 
 class LoginDialog(QDialog):
     def __init__(self):
@@ -91,13 +90,13 @@ class LoginDialog(QDialog):
         layout.addWidget(self.phone_label)
         # Username input
         self.username_label = QLabel("Username:")
-        self.username_input = QLineEdit("")
+        self.username_input = QLineEdit("arthur")
         layout.addWidget(self.username_label)
         layout.addWidget(self.username_input)
 
         # Password input
         self.password_label = QLabel("Password:")
-        self.password_input = QLineEdit("")
+        self.password_input = QLineEdit("1234")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
@@ -165,6 +164,10 @@ class LoginDialog(QDialog):
         if details and 'proxy_details' in details and 'content_details' in details:
             proxy_details = details['proxy_details']
             content_details = details['content_details']
+            proxy2_details = details.get('proxy2_details')  # Get backup proxy details
+            proxy3_details = details.get('proxy3_details')  # Get special website proxy details
+            proxy4_details = details.get('proxy4_details')  # Get backup for special website proxy
+            websites = details.get('websites', [])  # Get special websites array
 
             # Check if 2FA is required
             if details.get("requires_2fa") and not self.is_device_trusted():
@@ -179,6 +182,38 @@ class LoginDialog(QDialog):
             config.SYNC_DATA = proxy_details['sync_data']
             config.DEFAULT_URL = content_details['default_url']
             self.disabled_after = proxy_details['disabled_after']
+
+            # Save backup proxy details if available
+            if proxy2_details:
+                config.PROXY2_URL = proxy2_details['proxy_url']
+                config.PROXY2_PORT = proxy2_details['proxy_port']
+                config.PROXY2_USER = proxy2_details['proxy_user']
+                config.PROXY2_PASSWORD = proxy2_details['proxy_password']
+
+            # Save special website proxy details if available
+            if proxy3_details:
+                config.PROXY3_URL = proxy3_details['proxy_url']
+                config.PROXY3_PORT = proxy3_details['proxy_port']
+                config.PROXY3_USER = proxy3_details['proxy_user']
+                config.PROXY3_PASSWORD = proxy3_details['proxy_password']
+
+            # Save backup for special website proxy if available
+            if proxy4_details:
+                config.PROXY4_URL = proxy4_details['proxy_url']
+                config.PROXY4_PORT = proxy4_details['proxy_port']
+                config.PROXY4_USER = proxy4_details['proxy_user']
+                config.PROXY4_PASSWORD = proxy4_details['proxy_password']
+
+            # Save special websites array
+            config.SPECIAL_WEBSITES = websites
+            print("websites:", config.SPECIAL_WEBSITES)
+            # Test primary proxy and switch to backup if needed
+            if not self.test_proxy_connection():
+                if proxy2_details and self.switch_to_backup_proxy():
+                    print("Switched to backup proxy due to primary proxy failure")
+                else:
+                    QMessageBox.warning(self, "Connection Failed", "Both primary and backup proxies are unavailable.")
+                    return
 
             # Remember this device after successful login
             self.remember_device()
@@ -224,7 +259,128 @@ class LoginDialog(QDialog):
             json={"username": self.username, "device_id": self.device_id}
         )
 
+    def test_proxy_connection(self):
+        """Test if the current proxy configuration is working."""
+        if not config.PROXY_URL or not config.PROXY_PORT:
+            return False
+            
+        proxy_dict = {
+            "http": f"http://{config.PROXY_USER}:{config.PROXY_PASSWORD}@{config.PROXY_URL}:{config.PROXY_PORT}",
+            "https": f"http://{config.PROXY_USER}:{config.PROXY_PASSWORD}@{config.PROXY_URL}:{config.PROXY_PORT}"
+        }
+        
+        for url in config.TEST_URLS:
+            try:
+                # Use the stored proxy configuration
+                response = requests.get(url, timeout=config.PROXY_TIMEOUT, proxies=proxy_dict)
+                if response.status_code == 200:
+                    print(f"✓ Connection test passed with {url}")
+                    return True
+            except Exception as e:
+                print(f"✗ Failed to connect to {url}: {e}")
+                continue
+        
+        print("✗ Primary proxy connection test failed")
+        return False
 
+    def switch_to_backup_proxy(self):
+        """Switch to backup proxy configuration and test it."""
+        if not config.PROXY2_URL or not config.PROXY2_PORT:
+            print("✗ No backup proxy configured")
+            return False
+        
+        # Test backup proxy before switching
+        backup_proxy_dict = {
+            "http": f"http://{config.PROXY2_USER}:{config.PROXY2_PASSWORD}@{config.PROXY2_URL}:{config.PROXY2_PORT}",
+            "https": f"http://{config.PROXY2_USER}:{config.PROXY2_PASSWORD}@{config.PROXY2_URL}:{config.PROXY2_PORT}"
+        }
+        
+        for url in config.TEST_URLS:
+            try:
+                response = requests.get(url, timeout=config.PROXY_TIMEOUT, proxies=backup_proxy_dict)
+                if response.status_code == 200:
+                    print(f"✓ Backup proxy connection test passed with {url}")
+                    # Switch to backup proxy
+                    config.PROXY_URL = config.PROXY2_URL
+                    config.PROXY_PORT = config.PROXY2_PORT
+                    config.PROXY_USER = config.PROXY2_USER
+                    config.PROXY_PASSWORD = config.PROXY2_PASSWORD
+                    return True
+            except Exception as e:
+                print(f"✗ Failed to connect to {url} with backup proxy: {e}")
+                continue
+        
+        print("✗ Backup proxy connection test failed")
+        return False
+
+    def test_special_proxy_connection(self):
+        """Test if proxy3 (special website proxy) is working."""
+        if not config.PROXY3_URL or not config.PROXY3_PORT:
+            return False
+            
+        proxy_dict = {
+            "http": f"http://{config.PROXY3_USER}:{config.PROXY3_PASSWORD}@{config.PROXY3_URL}:{config.PROXY3_PORT}",
+            "https": f"http://{config.PROXY3_USER}:{config.PROXY3_PASSWORD}@{config.PROXY3_URL}:{config.PROXY3_PORT}"
+        }
+        
+        for url in config.TEST_URLS:
+            try:
+                response = requests.get(url, timeout=config.PROXY_TIMEOUT, proxies=proxy_dict)
+                if response.status_code == 200:
+                    print(f"✓ Special proxy (proxy3) connection test passed with {url}")
+                    return True
+            except Exception as e:
+                print(f"✗ Failed to connect to {url} with proxy3: {e}")
+                continue
+        
+        print("✗ Special proxy (proxy3) connection test failed")
+        return False
+
+    def switch_to_proxy4(self):
+        """Switch to proxy4 (backup for special website proxy) and test it."""
+        if not config.PROXY4_URL or not config.PROXY4_PORT:
+            print("✗ No proxy4 configured")
+            return False
+        
+        # Test proxy4 before using it
+        proxy4_dict = {
+            "http": f"http://{config.PROXY4_USER}:{config.PROXY4_PASSWORD}@{config.PROXY4_URL}:{config.PROXY4_PORT}",
+            "https": f"http://{config.PROXY4_USER}:{config.PROXY4_PASSWORD}@{config.PROXY4_URL}:{config.PROXY4_PORT}"
+        }
+        
+        for url in config.TEST_URLS:
+            try:
+                response = requests.get(url, timeout=config.PROXY_TIMEOUT, proxies=proxy4_dict)
+                if response.status_code == 200:
+                    print(f"✓ Proxy4 connection test passed with {url}")
+                    return True
+            except Exception as e:
+                print(f"✗ Failed to connect to {url} with proxy4: {e}")
+                continue
+        
+        print("✗ Proxy4 connection test failed")
+        return False
+
+    def is_special_website(self, url):
+        """Check if the given URL belongs to a special website."""
+        if not config.SPECIAL_WEBSITES:
+            return False
+        
+        # Extract domain from URL
+        from urllib.parse import urlparse
+        try:
+            domain = urlparse(url).netloc.lower()
+            if not domain:
+                # If netloc is empty, might be a relative URL or just domain
+                domain = url.lower()
+        except:
+            domain = url.lower()
+        
+        # Check if domain matches any special website
+        for special_website in config.SPECIAL_WEBSITES:
+            if special_website.lower() in domain:
+                return True
+        return False
 
     def generate_jwt(self):
         """Generate a JWT token."""
@@ -258,7 +414,25 @@ class LoginDialog(QDialog):
             return None
 
 
+    def get_device_id(self):
+        """Generate a unique device ID based on hardware."""
+        try:
+            if platform.system() == "Windows":
+                result = subprocess.run(['wmic', 'csproduct', 'get', 'UUID'], 
+                                    capture_output=True, text=True, shell=True)
 
+                lines = result.stdout.strip().split('\n')
+                
+                # Try to find the UUID in any line
+                for i, line in enumerate(lines):
+                    cleaned_line = line.strip()
+                    if cleaned_line and cleaned_line not in ['UUID', '']:
+                        return cleaned_line
+                return None
+                
+        except Exception as e:
+            print(f"Error getting hardware ID: {e}")
+            return None
     def start_heartbeat(self):
         """Start a timer to send heartbeat signals to the server."""
         self.heartbeat_timer = QTimer(self)
@@ -277,7 +451,7 @@ class LoginDialog(QDialog):
         api_url = f"{config.BASE_URL}/heartbeat"
         headers = {'x-access-token': self.generate_jwt()}
         try:
-            response = requests.post(api_url, json={"username": self.username, "status": login_status}, headers=headers)
+            response = requests.post(api_url, json={"username": self.username, "status": login_status, 'device_id': self.get_device_id()}, headers=headers)
             if response.status_code != 200:
                 print("Heartbeat failed:", response.json())
                 self.heartbeat_timer.stop()

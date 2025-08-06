@@ -73,6 +73,8 @@ class Browser(QMainWindow):
         else:
             assets_path = os.path.join(os.path.dirname(__file__), 'assets')
         events = Events()
+        events.browser = self  # Give events access to browser instance
+        self.events = events  # Store events reference for cleanup
         self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Browser Window Setup
         self.setWindowTitle("Espot Browser")
@@ -269,19 +271,22 @@ class Browser(QMainWindow):
         else:
             QCoreApplication.exit()
 
-    def set_proxy(self):
+    def set_proxy(self, proxy_url=None, proxy_port=None, proxy_user=None, proxy_password=None):
         """Set up the proxy for the browser."""
         try:
             proxy = QNetworkProxy()
             proxy.setType(QNetworkProxy.ProxyType.HttpProxy)
-            proxy.setHostName(config.PROXY_URL)
-            proxy.setPort(int(config.PROXY_PORT))
-            proxy.setUser(config.PROXY_USER)
-            proxy.setPassword(config.PROXY_PASSWORD)
+            proxy.setHostName(proxy_url or config.PROXY_URL)
+            proxy.setPort(int(proxy_port or config.PROXY_PORT))
+            proxy.setUser(proxy_user or config.PROXY_USER)
+            proxy.setPassword(proxy_password or config.PROXY_PASSWORD)
             QNetworkProxy.setApplicationProxy(proxy)
+            print(f"✓ Proxy set to {proxy_url or config.PROXY_URL}:{proxy_port or config.PROXY_PORT}")
+            return True
         except Exception as e:
             print("Error setting proxy:", e)
             QMessageBox.critical(self, "Invalid Proxy", "Please check your proxy settings.")
+            return False
 
     def check_proxy(self):
         """Check if the proxy is active by making a test request."""

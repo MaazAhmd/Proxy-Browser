@@ -1,0 +1,22 @@
+
+{
+  "restoreTerminals.terminals": [
+    {
+      "splitTerminals": [
+        {
+          "name": "Desktop App",
+          "commands": ["cd Desktop-Browser", ".\\venv\\Scripts\\activate"]
+        }
+      ]
+    },
+    {
+      "splitTerminals": [
+        {
+          "name": "Admin Panel",
+          "commands": ["cd Admin-Panel", ".\\venv\\Scripts\\activate"]
+        }
+      ]
+    }
+  ],
+  "restoreTerminals.runOnStartup": true
+}

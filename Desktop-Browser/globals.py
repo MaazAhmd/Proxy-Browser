@@ -3,6 +3,28 @@ class Config:
     PROXY_PORT = None
     PROXY_USER = None
     PROXY_PASSWORD = None
+    
+    # Backup proxy configuration
+    PROXY2_URL = None
+    PROXY2_PORT = None
+    PROXY2_USER = None
+    PROXY2_PASSWORD = None
+    
+    # Special website proxy configuration
+    PROXY3_URL = None
+    PROXY3_PORT = None
+    PROXY3_USER = None
+    PROXY3_PASSWORD = None
+    
+    # Backup for special website proxy
+    PROXY4_URL = None
+    PROXY4_PORT = None
+    PROXY4_USER = None
+    PROXY4_PASSWORD = None
+    
+    # Special websites array
+    SPECIAL_WEBSITES = []
+    
     DEFAULT_URL = None
     SYNC_DATA = None
     PROFILE = None
@@ -16,4 +38,8 @@ class Config:
     CURRENT_VERSION = 4.1
     CLOUD_VERSION_FILE = "version.json"
     INSTALLER_FILE = "Setup - Espot Browser.exe"
+    
+    # Proxy testing configuration
+    TEST_URLS = ["http://httpbin.org/ip", "http://icanhazip.com"]
+    PROXY_TIMEOUT = 10
 config = Config()

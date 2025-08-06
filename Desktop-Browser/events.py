@@ -1,16 +1,151 @@
 import re
+import requests
 from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import QUrl, Qt
 from PyQt6.QtGui import QIcon, QPixmap, QPainter
 from PyQt6.QtSvg import QSvgRenderer
+from PyQt6.QtWidgets import QMessageBox
 from globals import config
 from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
 from PyQt6.QtWebEngineWidgets import QWebEngineView
+from urllib.parse import urlparse
 
 class Events:
     tabs = None
     search_bar = None
+    browser = None  # Reference to browser instance
+    
+    def __init__(self):
+        # Initialize proxy tracking
+        self.current_proxy_type = None
+        
+    def get_proxy_type_for_url(self, url):
+        """Determine which proxy type to use based on URL."""
+        if not url:
+            return "general"  # Default to general proxy
+            
+        try:
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc.lower()
+            
+            # Remove www. prefix for comparison
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            
+            # Check if domain is in the special websites list
+            for special_website in config.SPECIAL_WEBSITES:
+                special_website = special_website.lower().strip()
+                if domain in special_website:
+                    return "special"
+
+            return "general"
+            
+        except Exception as e:
+            print(f"Error parsing URL {url}: {e}")
+            return "general"
+    
+    def can_access_url(self, url):
+        """Check if URL can be accessed with available proxies."""
+        required_proxy_type = self.get_proxy_type_for_url(url)
+        
+        if required_proxy_type == "special":
+            # Check if we have at least one special proxy configured
+            return (config.PROXY3_URL and config.PROXY3_PORT) or \
+                   (config.PROXY4_URL and config.PROXY4_PORT)
+        else:
+            # Check if we have at least one general proxy configured
+            return (config.PROXY_URL and config.PROXY_PORT) or \
+                   (config.PROXY2_URL and config.PROXY2_PORT)
+    
+    def _check_and_set_proxy_for_url(self, url):
+        """Check if URL can be accessed and set appropriate proxy."""
+        # Check if URL can be accessed with available proxies
+        if not self.can_access_url(url):
+            required_proxy_type = self.get_proxy_type_for_url(url)
+            if required_proxy_type == "special":
+                print(f"❌ Cannot access {url}")
+                print("   This website requires special proxy access, but no special proxies are configured.")
+                print("   Please contact your administrator.")
+            else:
+                print(f"❌ Cannot access {url}")
+                print("   No general proxy configuration available.")
+            return False
+        
+        # Set appropriate proxy for this URL
+        success = self.set_proxy_for_url(url)
+        if not success:
+            required_proxy_type = self.get_proxy_type_for_url(url)
+            if required_proxy_type == "special":
+                print(f"❌ Failed to set up special proxy for {url}")
+                print("   All special proxies are non-functional.")
+            else:
+                print(f"❌ Failed to set up general proxy for {url}")
+                print("   All general proxies are non-functional.")
+            return False
+            
+        return True
+    
+    def set_proxy_for_url(self, url):
+        """Set the appropriate proxy based on the URL and return success status."""
+        required_proxy_type = self.get_proxy_type_for_url(url)
+        print(f"Setting proxy for {url}: {required_proxy_type}")
+        
+        # Check if we're already using the correct proxy type
+        if required_proxy_type == "special":
+            # Check if we're already using special proxy
+            if self.current_proxy_type in ["special", "special_backup"]:
+                print(f"✓ Already using {self.current_proxy_type} proxy for special websites")
+                return True
+            return self._set_special_proxy()
+        else:
+            # Check if we're already using general proxy
+            if self.current_proxy_type in ["primary", "backup"]:
+                print(f"✓ Already using {self.current_proxy_type} proxy for general browsing")
+                return True
+            return self._set_general_proxy()
+    
+    def _set_general_proxy(self):
+        """Set general proxy (primary with backup fallback)."""
+        # Try primary proxy first
+        if self.browser and self.browser.set_proxy():
+            self.current_proxy_type = "primary"
+            print("✓ Primary proxy set for general browsing")
+            return True
+        
+        print("Primary proxy failed, trying backup...")
+        
+        # If primary fails, try backup
+        if config.PROXY2_URL and self.browser:
+            if self.browser.set_proxy(config.PROXY2_URL, config.PROXY2_PORT, config.PROXY2_USER, config.PROXY2_PASSWORD):
+                self.current_proxy_type = "backup"
+                print("✓ Switched to backup proxy for general browsing")
+                return True
+        
+        print("✗ Both general proxies failed!")
+        return False
+    
+    def _set_special_proxy(self):
+        """Set special proxy (special with special_backup fallback)."""
+        # Try special proxy first (proxy3)
+        if config.PROXY3_URL and self.browser:
+            if self.browser.set_proxy(config.PROXY3_URL, config.PROXY3_PORT, config.PROXY3_USER, config.PROXY3_PASSWORD):
+                self.current_proxy_type = "special"
+                print("✓ Special proxy set for special websites")
+                return True
+        
+        print("Special proxy failed, trying special backup...")
+        
+        # If special fails, try special backup (proxy4)
+        if config.PROXY4_URL and self.browser:
+            if self.browser.set_proxy(config.PROXY4_URL, config.PROXY4_PORT, config.PROXY4_USER, config.PROXY4_PASSWORD):
+                self.current_proxy_type = "special_backup"
+                print("✓ Switched to special backup proxy for special websites")
+                return True
+        
+        print("✗ Both special proxies failed!")
+        return False
+    
     def new_tab(self):
         """Open a new tab in the tab widget."""
         # Create a new WebEngineView for the tab
@@ -60,8 +195,8 @@ class Events:
             lambda ok, browser_view=browser_view: self.update_tab_title(browser_view, ok)
         )
 
-        # Connect urlChanged signal to update the search bar
-        browser_view.urlChanged.connect(self.update_search_bar)
+        # Connect urlChanged signal to update the search bar and handle special websites
+        browser_view.urlChanged.connect(lambda url, view=browser_view: self.handle_url_change(url, view))
 
         # Handle new window requests (open in new tab)
         def handle_new_window(window_type):
@@ -90,7 +225,7 @@ class Events:
             new_view.loadFinished.connect(
                 lambda ok, view=new_view: self.update_tab_title(view, ok)
             )
-            new_view.urlChanged.connect(self.update_search_bar)
+            new_view.urlChanged.connect(lambda url, view=new_view: self.handle_url_change(url, view))
             
             # Override createWindow for the new view too
             new_view.createWindow = lambda wt: handle_new_window(wt)
@@ -110,6 +245,14 @@ class Events:
     def update_search_bar(self, url):
         """Update the search bar text with the current URL."""
         self.search_bar.setText(url.toString())
+
+    def handle_url_change(self, url, browser_view):
+        """Handle URL changes and check for special websites."""
+        url_string = url.toString()
+        
+        # Update search bar
+        if browser_view == self.get_current_browser():
+            self.update_search_bar(url)
 
     def update_tab_title(self, browser_view, ok):
         """Update the tab title based on the page title."""
@@ -143,28 +286,22 @@ class Events:
     def open_url(self):
         query = self.search_bar.text().strip()
         if query:
-            # Improved URL detection pattern
-            url_pattern = re.compile(
-                r'^(https?://)?'  # Optional protocol
-                r'(([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})'  # Domain name
-                r'(:\d+)?'  # Optional port
-                r'(/.*)?$'  # Optional path
-            )
-
-            if url_pattern.match(query):
-                # If it doesn't have 'http://' or 'https://', add 'http://'
+            current_browser = self.get_current_browser()
+            if current_browser:
+                # Add protocol if missing
                 if not query.startswith(('http://', 'https://')):
-                    query = 'http://' + query
-                # Open the URL in the current tab
-                current_browser = self.get_current_browser()
-                if current_browser:
-                    current_browser.setUrl(QUrl(query))  # Open the URL directly
-            else:
-                # If not a URL, treat it as a search query
-                search_url = f"https://www.google.com/search?q={query}"
-                current_browser = self.get_current_browser()
-                if current_browser:
-                    current_browser.setUrl(QUrl(search_url))  # Perform Google search
+                    if '.' in query and ' ' not in query:
+                        query = 'https://' + query
+                    else:
+                        # Search query
+                        query = f'https://www.google.com/search?q={query}'
+                
+                # Check and set appropriate proxy before navigation
+                if not self._check_and_set_proxy_for_url(query):
+                    QMessageBox.warning(None, "Access Denied", "This website cannot be accessed. Required proxy servers are unavailable.")
+                    return  # Don't navigate if proxy setup failed
+                
+                current_browser.setUrl(QUrl(query))
 
     def get_current_browser(self):
         """Return the current browser (QWebEngineView) from the active tab."""
