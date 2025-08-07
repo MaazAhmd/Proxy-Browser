@@ -95,40 +95,10 @@ def token_required(f):
 def heartbeat():
     data = request.json
     username = data.get('username')
+    device_id = data.get('device_id')
     login_status = data.get('status')
-    
     # Get the real client IP address
-    def get_real_ip():
-        # Check for common proxy headers in order of preference
-        forwarded_for = request.headers.get('X-Forwarded-For')
-        if forwarded_for:
-            # X-Forwarded-For can contain multiple IPs, take the first one (original client)
-            return forwarded_for.split(',')[0].strip()
-        
-        # Check other common headers
-        real_ip = request.headers.get('X-Real-IP')
-        if real_ip:
-            return real_ip
-            
-        # Check Cloudflare specific header
-        cf_connecting_ip = request.headers.get('CF-Connecting-IP')
-        if cf_connecting_ip:
-            return cf_connecting_ip
-            
-        # Fallback to remote_addr
-        return request.remote_addr
-    
-    # Generate a unique session identifier combining IP and User-Agent
-    client_ip = get_real_ip()
-    user_agent = request.headers.get('User-Agent', '')
-    
-    # Create a more stable session identifier
-    # You can use either the IP only or combine with user agent for better uniqueness
-    session_identifier = f"{client_ip}_{hash(user_agent) % 10000}"  # Use hash to shorten user agent
-    
-    # Alternative: Use only IP if you prefer
-    # session_identifier = client_ip
-
+    print(f"Heartbeat received from {username} with device ID {device_id} and status {login_status}")
     user = User.query.filter_by(username=username).first()
     if not user:
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
@@ -138,24 +108,23 @@ def heartbeat():
     try:
         if login_status is False:
             # Remove the session for the given session identifier
-            session = Session.query.filter_by(user_id=user.id, ip_address=session_identifier).first()
+            session = Session.query.filter_by(user_id=user.id, ip_address=device_id).first()
             if session:
                 db.session.delete(session)
         else:
-            print("This: ", active_sessions, user.session_limit)
             # Check if the user has reached the session limit
             if active_sessions > user.session_limit:
                 # Check if current session already exists
-                existing_session = Session.query.filter_by(user_id=user.id, ip_address=session_identifier).first()
+                existing_session = Session.query.filter_by(user_id=user.id, ip_address=device_id).first()
                 if not existing_session:
-                    return jsonify({'status': 'error', 'message': 'Session limit reached'}), 403
+                    return jsonify({'status': 'error', 'message': 'Session limit reached. Please close other sessions and try again in a minute.'}), 403
 
             # Update or create the session for the given session identifier
-            session = Session.query.filter_by(user_id=user.id, ip_address=session_identifier).first()
+            session = Session.query.filter_by(user_id=user.id, ip_address=device_id).first()
             if session:
                 session.last_seen = datetime.now()
             else:
-                new_session = Session(user_id=user.id, ip_address=session_identifier)
+                new_session = Session(user_id=user.id, ip_address=device_id)
                 db.session.add(new_session)
         db.session.commit()
         return jsonify({'status': 'success'}), 200
@@ -163,7 +132,6 @@ def heartbeat():
         print(e)
         db.session.rollback()
         return jsonify({'status': 'error', 'message': 'An error occurred'}), 500
-
 
 @app.route('/get-login-page-content', methods=['GET'])
 def get_login_page_content():
