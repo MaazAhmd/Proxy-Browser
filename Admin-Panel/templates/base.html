@@ -103,6 +103,12 @@
               Manage Login Page
             </a>
           </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link {% if page == 'import_export' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
+              href="{{ url_for('import_export.import_export_page') }}">
+              Import/Export
+            </a>
+          </li>
         </ul>
       </nav>
 

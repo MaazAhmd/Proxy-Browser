@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set page = 'import_export' %}
+{% block content %}
+<div class="container">
+  <h2 class="mb-4">Import / Export Users and Proxies</h2>
+
+  <div class="mb-4">
+    <h4>Users</h4>
+    <a href="{{ url_for('import_export.export_users') }}" class="btn btn-success">Export Users</a>
+    <a href="{{ url_for('import_export.download_users_template') }}" class="btn btn-secondary">Download Users Template</a>
+    <form action="{{ url_for('import_export.import_users') }}" method="POST" enctype="multipart/form-data" class="mt-2">
+      <input type="file" name="file" required>
+      <button type="submit" class="btn btn-primary mt-2">Import Users</button>
+    </form>
+  </div>
+
+  <div class="mb-4">
+    <h4>Proxies</h4>
+    <a href="{{ url_for('import_export.export_proxies') }}" class="btn btn-success">Export Proxies</a>
+    <a href="{{ url_for('import_export.download_proxies_template') }}" class="btn btn-secondary">Download Proxies Template</a>
+    <form action="{{ url_for('import_export.import_proxies') }}" method="POST" enctype="multipart/form-data" class="mt-2">
+      <input type="file" name="file" required>
+      <button type="submit" class="btn btn-primary mt-2">Import Proxies</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
