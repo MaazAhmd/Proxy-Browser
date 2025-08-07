@@ -193,7 +193,9 @@ class Browser(QMainWindow):
 
     def closeEvent(self, event):
         """Handle close event - minimize to tray instead of closing"""
+        print("Inside closeEvent")
         if not self.force_quit and hasattr(self, 'tray_icon') and self.tray_icon.isVisible():
+            print("Minimizing to tray")
             event.ignore()
             self.hide()
             self.tray_icon.showMessage(
@@ -204,7 +206,9 @@ class Browser(QMainWindow):
             )
         else:
             """Handle application close event with uploading in the background."""
+            print("Stopping heartbeat")
             self.login_dialog.stop_heartbeat()
+            print("Cleaning up webengine pages")
             self.cleanup_webengine_pages()
             if(config.SYNC_DATA):
             # Show a dialog box indicating that data is being uploaded
@@ -409,6 +413,7 @@ class Browser(QMainWindow):
     
     def quit_application(self):
         """Quit the application completely"""
+        print("Inside quit_application")
         self.force_quit = True
         self.close()
 
