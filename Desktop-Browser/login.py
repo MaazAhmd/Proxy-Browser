@@ -149,8 +149,8 @@ class LoginDialog(QDialog):
         """)
 
 
-    def get_device_id(self):
-        return hashlib.sha256(uuid.getnode().to_bytes(6, 'big')).hexdigest()
+    # def get_device_id(self):
+    #     return hashlib.sha256(uuid.getnode().to_bytes(6, 'big')).hexdigest()
 
 
     def login(self):
@@ -418,8 +418,11 @@ class LoginDialog(QDialog):
         """Generate a unique device ID based on hardware."""
         try:
             if platform.system() == "Windows":
-                result = subprocess.run(['wmic', 'csproduct', 'get', 'UUID'], 
-                                    capture_output=True, text=True, shell=True)
+                # print("Windows Platform Detected")
+                result = subprocess.run(
+                    ['powershell', '-Command', 'Get-CimInstance -Class Win32_ComputerSystemProduct | Select-Object -ExpandProperty UUID'],
+                    capture_output=True, text=True, shell=True
+                )
 
                 lines = result.stdout.strip().split('\n')
                 
@@ -427,7 +430,10 @@ class LoginDialog(QDialog):
                 for i, line in enumerate(lines):
                     cleaned_line = line.strip()
                     if cleaned_line and cleaned_line not in ['UUID', '']:
+                        print("Returning ", cleaned_line)
                         return cleaned_line
+                    
+                print("Returning None")
                 return None
                 
         except Exception as e:
