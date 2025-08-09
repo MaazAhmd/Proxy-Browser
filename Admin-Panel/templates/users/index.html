@@ -89,6 +89,15 @@
                     </button>
                 </td>
                 <td>
+                    <button
+                            class="btn btn-primary btn-sm assign-proxy-btn"
+                            data-id="{{ user.id }}"
+                            data-proxy-index="1"
+                            data-username="{{ user.username }}"
+                            data-proxy="{{ user.proxy }}"
+                    >
+                        Assign Proxy
+                    </button>
                     <a href="{{ url_for('users.manage_websites', user_id=user.id) }}"
                             class="btn btn-primary btn-sm mt-1"
                     >Manage Optional Proxies</a>

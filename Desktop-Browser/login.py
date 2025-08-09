@@ -100,13 +100,13 @@ class LoginDialog(QDialog):
         layout.addWidget(self.phone_label)
         # Username input
         self.username_label = QLabel("Username:")
-        self.username_input = QLineEdit("arthur")
+        self.username_input = QLineEdit("")
         layout.addWidget(self.username_label)
         layout.addWidget(self.username_input)
 
         # Password input
         self.password_label = QLabel("Password:")
-        self.password_input = QLineEdit("1234")
+        self.password_input = QLineEdit("")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_input)
