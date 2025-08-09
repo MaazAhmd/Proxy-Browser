@@ -121,7 +121,8 @@
                     </button>
                 </td>
                 <td>
-                    {{ 'No note added' }}
+                    {{ user.note or 'No note added' }}
+                    <button onclick="addNote('{{user.id}}')">Add Note</button>
                 </td>
             </tr>
 
@@ -238,6 +239,36 @@
 
 
     <script>
+        function addNote(user_id) {
+            const note = prompt("Enter note:");
+            
+            if (note && note.trim() !== "") {
+                fetch(`/users/add-note/${user_id}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ note: note.trim() })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Note added successfully!");
+                        location.reload();
+                    } else {
+                        alert("Error: " + (data.message || "Could not add note."));
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("An error occurred while adding the note.");
+                });
+            } else {
+                alert("Note cannot be empty.");
+            }
+        }
+
+
         document.addEventListener("DOMContentLoaded", function () {
             let sessionLimitModal = document.getElementById("sessionLimitModal");
             sessionLimitModal.addEventListener("show.bs.modal", function (event) {

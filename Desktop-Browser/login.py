@@ -39,6 +39,7 @@ class LoginDialog(QDialog):
         print("Fetching login page content...")
         try:
             response = requests.get(f"{config.BASE_URL}/get-login-page-content")
+            print(response.status_code)
             if response.status_code == 200:
                 data = response.json()
                 if data["status"] == 1:
@@ -50,18 +51,26 @@ class LoginDialog(QDialog):
                     # Initialize UI components after fetching data
                     self.init_ui(logo_url, phone_number, slogan, contact_url)
                 else:
-                    QMessageBox.warning(self, "Error", "Failed to fetch login page content.")
+                    QMessageBox.warning(self, "Error", "Failed to fetch login page content, due to server error.")
                     self.reject()  # Close the dialog if data fetch fails
                     QCoreApplication.exit()
             else:
-                QMessageBox.warning(self, "Error", "Failed to fetch login page content.")
+                QMessageBox.warning(self, "Error", "Failed to fetch login page content due to server error.")
                 self.reject()  # Close the dialog if data fetch fails
                 QCoreApplication.exit()
+
+        except requests.Timeout:
+            print("Request timed out.")
+            QMessageBox.warning(self, "Timeout", "Request timed out while fetching login page content.")
+            self.reject()
+            QCoreApplication.exit()
+
         except requests.RequestException as e:
             print("Error fetching login page content:", e)
             QMessageBox.warning(self, "Error", "Failed to fetch login page content.")
             self.reject()  # Close the dialog if data fetch fails
             QCoreApplication.exit()
+            
 
     def init_ui(self, logo_url, phone_number, slogan, contact_line):
         """Initialize the UI components with the fetched data."""
@@ -483,6 +492,13 @@ class LoginDialog(QDialog):
             QMessageBox.warning(self, "Session Expired", "Your session has expired.")
             self.close()
             self.show_login_dialog()
+        except Exception as e:
+            print("An error occurred while sending Heartbeat, probably network issue.")
+            self.heartbeat_timer.stop()
+            QMessageBox.warning(self, "Connection Error", "Unable to connect to the Server. Please fix your internet connection and Try Again.")
+            self.close()
+            self.show_login_dialog()
+
 
 class TwoFADialog(QDialog):
     def __init__(self, username, device_id):

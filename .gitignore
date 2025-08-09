@@ -4,7 +4,6 @@ venv/
 .env
 cache/
 storage/
-migrations/
 *zip
 
 __pycache__

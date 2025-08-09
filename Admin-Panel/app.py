@@ -113,6 +113,8 @@ def heartbeat():
                 db.session.delete(session)
         else:
             # Check if the user has reached the session limit
+            print("Active sessions:", active_sessions)
+            print("Session limit:", user.session_limit)
             if active_sessions > user.session_limit:
                 # Check if current session already exists
                 existing_session = Session.query.filter_by(user_id=user.id, ip_address=device_id).first()

@@ -353,3 +353,28 @@ def delete_website(user_id, website_id):
     db.session.commit()
     flash("Website deleted successfully.", "info")
     return redirect(url_for('users.manage_websites', user_id=user_id))
+
+
+@users_bp.route("/add-note/<string:user_id>", methods=["POST"])
+def add_note(user_id):
+    try:
+        data = request.get_json()
+        note = data.get("note", "").strip()
+
+        if not note:
+            return jsonify({"success": False, "message": "Note cannot be empty"}), 400
+
+        # Example: Save to database (replace with your actual DB logic)
+        user = User.query.get(user_id)
+        if user:
+            user.note = note
+            db.session.commit()
+        else:
+            print('User not found')
+            return jsonify({"success": False, "message": "User not found"}), 404
+
+        print(f"Note for user {user_id}: {note}")  # Debug
+        return jsonify({"success": True, "message": "Note added successfully"})
+    
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500

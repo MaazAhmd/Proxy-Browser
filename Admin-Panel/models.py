@@ -37,7 +37,7 @@ class User(db.Model):
     disabled_after = db.Column(db.DateTime, nullable=True)
     disabled = db.Column(db.Boolean, nullable=False, default=False)
     session_limit = db.Column(db.Integer, nullable=False, default=1)
-    # note = db.Column(db.Text, nullable=True, default=None)  # New field for user notes
+    note = db.Column(db.Text, nullable=True, default=None)  # New field for user notes
     
     proxy_id = db.Column(db.String(64), db.ForeignKey('proxy.id'), nullable=True)
     # proxy = db.relationship('Proxy', back_populates='assigned_to_users')  # Relationship with Proxy
