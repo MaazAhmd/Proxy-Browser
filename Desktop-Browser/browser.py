@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QSystemTrayIcon,
     QMenu,
+    QApplication
 )
 from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication, QThread, pyqtSignal, QEventLoop, Qt
 from PyQt6.QtGui import QIcon, QAction
@@ -412,8 +413,18 @@ class Browser(QMainWindow):
                 self.show_from_tray()
     
     def quit_application(self):
-        """Quit the application completely"""
+        """Quit the application completely with quitting dialog"""
         print("Inside quit_application")
+        self.force_quit = True
+
+        # Show quitting dialog
+        quitting_dialog = QMessageBox(self)
+        quitting_dialog.setWindowTitle("Quitting")
+        quitting_dialog.setText("Closing application, please wait...")
+        quitting_dialog.setStandardButtons(QMessageBox.StandardButton.NoButton)  # no close button
+        quitting_dialog.setModal(True)
+        quitting_dialog.show()
+
         self.force_quit = True
         self.close()
 

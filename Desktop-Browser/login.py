@@ -93,11 +93,19 @@ class LoginDialog(QDialog):
         self.tagline_label = QLabel(f"{slogan}")
         self.tagline_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.tagline_label)
-        self.phone_label = QLabel(phone_number)
-        self.phone_label.setCursor(Qt.CursorShape.IBeamCursor)
-        self.phone_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+
+        # Phone Number Label
+        whatsapp_url = f"https://wa.me/{phone_number.lstrip('+')}"
+        self.phone_label = QLabel(f'<a href="{whatsapp_url}">{phone_number}</a>')
+        self.phone_label.setTextFormat(Qt.TextFormat.RichText)
+        self.phone_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextBrowserInteraction | Qt.TextInteractionFlag.LinksAccessibleByMouse
+        )
         self.phone_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.phone_label.setOpenExternalLinks(True)  # Open the link in browser
+        self.phone_label.setObjectName("phoneLabel")
         layout.addWidget(self.phone_label)
+
         # Username input
         self.username_label = QLabel("Username:")
         self.username_input = QLineEdit("")
@@ -116,10 +124,6 @@ class LoginDialog(QDialog):
         self.login_button.clicked.connect(self.login)
         self.login_button.setCursor(Qt.CursorShape.PointingHandCursor)
         layout.addWidget(self.login_button)
-
-        
-        # Construct the WhatsApp URL
-        whatsapp_url = f"https://wa.me/{phone_number.lstrip('+')}"  # wa.me requires numbers without '+'
 
         # Create the label with hyperlink
         self.contact_label = QLabel(f'{contact_line} <a href="{whatsapp_url}">{phone_number}</a>')
