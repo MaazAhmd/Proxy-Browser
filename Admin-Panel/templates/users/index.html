@@ -28,6 +28,7 @@
             <th>Proxy</th>
             <th>Session</th>
             <th>Note</th>
+            <th>Actions</th>
         </tr>
         </thead>
         <tbody>
@@ -80,7 +81,7 @@
                             class="btn btn-primary btn-sm mt-1"
                     >Content</a>
                     <button
-                            class="btn btn-sm btn-primary toggle-2fa-btn mt-1"
+                            class="btn btn-sm btn-{{ "success" if user.two_factor else "danger" }} toggle-2fa-btn mt-1"
                             data-id="{{ user.id }}"
                             data-username="{{ user.username }}"
                     >
@@ -121,7 +122,7 @@
                         <i class="fas fa-user-cog"></i> Set Session Limit
                     </button>
                      <button
-                            class="btn btn-sm btn-primary toggle-sync-btn mt-1"
+                            class="btn btn-sm btn-{{ "success" if user.sync_data else "danger" }} toggle-sync-btn mt-1"
                             data-id="{{ user.id }}"
                             data-username="{{ user.username }}"
                     >
@@ -133,7 +134,12 @@
                     {{ user.note or 'No note added' }}
                     <button onclick="addNote('{{user.id}}')">Add Note</button>
                 </td>
+                <td>
+                    <button onclick="copyToClipboard('{{ user.username }}')">Copy Username</button>
+                    <button onclick="copyToClipboard('{{ user.password }}')">Copy Password</button>
+                </td>
             </tr>
+
 
         {% endfor %}
         </tbody>
@@ -246,6 +252,35 @@
         </div>
     </div>
 
+    <script>
+        async function copyToClipboard(text) {
+        // Try modern Clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            try {
+            await navigator.clipboard.writeText(text);
+            return true; // Success
+            } catch (err) {
+            console.error("Clipboard API failed, falling back.", err);
+            }
+        }
+
+        // Fallback for older browsers
+        try {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(ta);
+            return ok;
+        } catch (err) {
+            console.error("Fallback copy failed.", err);
+            return false;
+        }
+        }
+    </script>
 
     <script>
         function addNote(user_id) {
@@ -329,6 +364,13 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
+                                if (buttonElement.classList.contains("btn-success")) {
+                                    buttonElement.classList.remove("btn-success");
+                                    buttonElement.classList.add("btn-danger");
+                                } else {
+                                    buttonElement.classList.remove("btn-danger");
+                                    buttonElement.classList.add("btn-success");
+                                }
                                 buttonElement.textContent = data.sync_data ? "Turn sync off" : "Turn sync on";
                             } else {
                                 alert(data.message);
@@ -355,6 +397,13 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
+                                if (buttonElement.classList.contains("btn-success")) {
+                                    buttonElement.classList.remove("btn-success");
+                                    buttonElement.classList.add("btn-danger");
+                                } else {
+                                    buttonElement.classList.remove("btn-danger");
+                                    buttonElement.classList.add("btn-success");
+                                }
                                 buttonElement.textContent = data.two_factor ? "Turn 2FA off" : "Turn 2FA on";
                             } else {
                                 alert(data.message);

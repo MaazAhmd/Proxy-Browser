@@ -71,13 +71,13 @@ def add_user():
             return redirect(url_for('users.add_user'))
 
         # Hash the password
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        # hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
         # Create a new user
         new_user = User(
             username=username,
             email=email,
-            password=hashed_password,
+            password=password,
             disabled_after=disabled_after
         )
         db.session.add(new_user)
@@ -128,8 +128,8 @@ def edit_user(user_id):
         # Handle password update
         new_password = request.form.get('password')
         if new_password:
-            user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
-
+            # user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+            user.password = new_password
         db.session.commit()
 
         flash('User updated successfully!', 'success')
