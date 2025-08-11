@@ -51,7 +51,8 @@ def login():
                 otp = generate_otp()
                 session['2fa_otp'] = otp
                 session['pending_admin'] = admin.id
-                flash('A verification code has been sent to your email.', 'info')
+                masked_email = f"{admin.email[:4]}***{admin.email[-13:]}"
+                flash(f"A verification code has been sent to the email: {masked_email}", "info")
 
                 # Send email
                 msg = Message('Your 2FA Code', recipients=[admin.email])
