@@ -186,8 +186,8 @@ class LoginDialog(QDialog):
         details = self.get_proxy_details(self.username, self.password)
         if not details:
             return
-
         if details and 'proxy_details' in details and 'content_details' in details:
+            self.hide()
             proxy_details = details['proxy_details']
             content_details = details['content_details']
             proxy2_details = details.get('proxy2_details')  # Get backup proxy details
@@ -238,6 +238,7 @@ class LoginDialog(QDialog):
                 if proxy2_details and self.switch_to_backup_proxy():
                     print("Switched to backup proxy due to primary proxy failure")
                 else:
+                    self.show()
                     QMessageBox.warning(self, "Connection Failed", "Both primary and backup proxies are unavailable.")
                     return
 

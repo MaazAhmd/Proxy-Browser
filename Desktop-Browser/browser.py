@@ -17,8 +17,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QVBoxLayout,
     QSystemTrayIcon,
-    QMenu,
-    QApplication
+    QMenu
 )
 from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication, QThread, pyqtSignal, QEventLoop, Qt
 from PyQt6.QtGui import QIcon, QAction
@@ -88,6 +87,10 @@ class Browser(QMainWindow):
         self.tabs.setMovable(True)  # Allow rearranging tabs
         self.setCentralWidget(self.tabs)
         events.tabs = self.tabs
+
+        # Enable download handling
+        profile = QWebEngineProfile.defaultProfile()
+        profile.downloadRequested.connect(self.handle_download)
 
         # Navigation bar (Back, Forward, Reload buttons)
         navbar = QToolBar("Navigation")
@@ -187,6 +190,35 @@ class Browser(QMainWindow):
         self.force_quit = False
         self.init_system_tray()
 
+    def handle_download(self, download):
+        """Handle file downloads from the browser."""
+        print("Download handler called!")  # Debug log
+        suggested_filename = download.suggestedFileName()
+        print(f"Suggested filename: {suggested_filename}")  # Debug log
+        downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+        
+        # Ensure Downloads folder exists
+        os.makedirs(downloads_path, exist_ok=True)
+        
+        # Handle duplicate filenames
+        final_filename = suggested_filename
+        counter = 1
+        while os.path.exists(os.path.join(downloads_path, final_filename)):
+            name, ext = os.path.splitext(suggested_filename)
+            final_filename = f"{name} ({counter}){ext}"
+            counter += 1
+        
+        # Set download directory and filename
+        download.setDownloadDirectory(downloads_path)
+        download.setDownloadFileName(final_filename)
+        download.accept()
+        
+        final_path = os.path.join(downloads_path, final_filename)
+        print(f"Download started: {final_path}")
+        
+        # Show a message to the user
+        QMessageBox.information(self, "Download Started", f"File will be saved to: {final_path}")
+
     def set_user_agent(self):
         """Set a custom user-agent string for the browser."""
         profile = QWebEngineProfile.defaultProfile()
@@ -195,7 +227,37 @@ class Browser(QMainWindow):
     def closeEvent(self, event):
         """Handle close event - minimize to tray instead of closing"""
         print("Inside closeEvent")
-        if not self.force_quit and hasattr(self, 'tray_icon') and self.tray_icon.isVisible():
+        
+        # If force quit is requested, handle closing immediately
+        if self.force_quit:
+            print("Force quit requested - handling application close")
+            print("Stopping heartbeat")
+            self.login_dialog.stop_heartbeat()
+            print("Cleaning up webengine pages")
+            self.cleanup_webengine_pages()
+            
+            if config.SYNC_DATA:
+                print("Starting data upload in background")
+                # Show a dialog box indicating that data is being uploaded
+                self.hide()
+                # Start the upload in a separate thread
+                self.upload_thread = threading.Thread(target=self.cookies.upload_data_to_cloud)
+                self.upload_thread.start()
+    
+                # Use a QTimer to check if the upload is complete and close the application
+                self.timer = QTimer(self)
+                self.timer.timeout.connect(self.check_upload_complete)
+                self.timer.start(1000)
+    
+                # Ignore the close event for now - let timer handle final exit
+                event.ignore()
+            else:
+                print("Accepting close event")
+                event.accept()
+            return  # Exit early to prevent tray minimization logic
+        
+        # Normal close behavior - minimize to tray
+        if hasattr(self, 'tray_icon') and self.tray_icon.isVisible():
             print("Minimizing to tray")
             event.ignore()
             self.hide()
@@ -206,27 +268,9 @@ class Browser(QMainWindow):
                 2000
             )
         else:
-            """Handle application close event with uploading in the background."""
-            print("Stopping heartbeat")
-            self.login_dialog.stop_heartbeat()
-            print("Cleaning up webengine pages")
-            self.cleanup_webengine_pages()
-            if(config.SYNC_DATA):
-            # Show a dialog box indicating that data is being uploaded
-                self.hide()
-                # Start the upload in a separate thread
-                self.upload_thread = threading.Thread(target=self.cookies.upload_data_to_cloud)
-                self.upload_thread.start()
-
-                # Use a QTimer to check if the upload is complete and close the application
-                self.timer = QTimer(self)
-                self.timer.timeout.connect(self.check_upload_complete)
-                self.timer.start(1000)
-
-                # Ignore the close event for now
-                event.ignore()
-            else:
-                event.accept()
+            # No tray available, close normally
+            print("No tray available, closing normally")
+            event.accept()
 
     def check_upload_complete(self):
         """Check if the upload thread is complete."""

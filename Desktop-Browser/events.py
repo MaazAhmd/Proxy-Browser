@@ -1,5 +1,3 @@
-import re
-import requests
 from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import QUrl, Qt
@@ -240,6 +238,11 @@ class Events:
         profile: QWebEngineProfile = config.PROFILE if config.PROFILE else QWebEngineProfile.defaultProfile()
         webPage: QWebEnginePage = QWebEnginePage(profile, webEngine)
         webEngine.setPage(webPage)
+        
+        # Connect download handler to this tab's profile
+        if self.browser and hasattr(self.browser, 'handle_download'):
+            profile.downloadRequested.connect(self.browser.handle_download)
+        
         return webEngine
 
     def update_search_bar(self, url):
