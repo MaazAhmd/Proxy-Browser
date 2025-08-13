@@ -17,7 +17,9 @@ from PyQt6.QtWidgets import (
     QLabel,
     QVBoxLayout,
     QSystemTrayIcon,
-    QMenu
+    QMenu,
+    QFileDialog
+    
 )
 from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication, QThread, pyqtSignal, QEventLoop, Qt
 from PyQt6.QtGui import QIcon, QAction
@@ -195,29 +197,34 @@ class Browser(QMainWindow):
         print("Download handler called!")  # Debug log
         suggested_filename = download.suggestedFileName()
         print(f"Suggested filename: {suggested_filename}")  # Debug log
+        
+        # Show file save dialog
         downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, 
+            "Save File", 
+            os.path.join(downloads_path, suggested_filename),
+            "All Files (*)"
+        )
         
-        # Ensure Downloads folder exists
-        os.makedirs(downloads_path, exist_ok=True)
-        
-        # Handle duplicate filenames
-        final_filename = suggested_filename
-        counter = 1
-        while os.path.exists(os.path.join(downloads_path, final_filename)):
-            name, ext = os.path.splitext(suggested_filename)
-            final_filename = f"{name} ({counter}){ext}"
-            counter += 1
-        
-        # Set download directory and filename
-        download.setDownloadDirectory(downloads_path)
-        download.setDownloadFileName(final_filename)
-        download.accept()
-        
-        final_path = os.path.join(downloads_path, final_filename)
-        print(f"Download started: {final_path}")
-        
-        # Show a message to the user
-        QMessageBox.information(self, "Download Started", f"File will be saved to: {final_path}")
+        if file_path:
+            # Extract directory and filename from the chosen path
+            download_dir = os.path.dirname(file_path)
+            filename = os.path.basename(file_path)
+            
+            # Set download directory and filename
+            download.setDownloadDirectory(download_dir)
+            download.setDownloadFileName(filename)
+            download.accept()
+            
+            print(f"Download started: {file_path}")
+            
+            # Show a message to the user
+            QMessageBox.information(self, "Download Started", f"File will be saved to: {file_path}")
+        else:
+            # User canceled the dialog
+            download.cancel()
+            print("Download canceled by user.")
 
     def set_user_agent(self):
         """Set a custom user-agent string for the browser."""
