@@ -28,14 +28,14 @@ class Config:
     DEFAULT_URL = None
     SYNC_DATA = None
     PROFILE = None
-    BASE_URL = "http://localhost:5000/"
+    BASE_URL = "https://espot-browser-beta.onrender.com/"
     COOKIE_BUCKET_NAME = "espot-browser-beta-cookies-data"
     VERSION_BUCKET_NAME = "espot-browser-beta-version"
     CLOUDFLARE_ACCESS_KEY = "6cf9c0a917cc03005d53cbd9c29255db"
     CLOUDFLARE_SECRET_KEY = "62aada3122ab29154eb5490204b62ddec5aba43e47d60267fabaee3ae447ea60"
     CLOUDFLARE_ENDPOINT_URL = "https://3e16a6f90ade2025b173edd3439f41f3.r2.cloudflarestorage.com"
     SECRET_KEY = 'QR2vZ7ocC7JkF0b02Kd7a5slN92MYgvd'
-    CURRENT_VERSION = 5.1
+    CURRENT_VERSION = 5.2
     CLOUD_VERSION_FILE = "version.json"
     INSTALLER_FILE = "Setup - Espot Browser Beta.exe"
     

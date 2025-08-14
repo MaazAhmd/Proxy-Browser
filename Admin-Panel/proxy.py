@@ -292,7 +292,7 @@ def get_proxy():
     if not user:
         return jsonify({'status': 0, 'error_message': 'Username not found'}), 200
 
-    if not check_password_hash(user.password, password):
+    if not user.password == password:
         return jsonify({'status': 0, 'error_message': 'Incorrect password'}), 200
 
     if user.disabled or (user.disabled_after and datetime.datetime.now() > user.disabled_after):
