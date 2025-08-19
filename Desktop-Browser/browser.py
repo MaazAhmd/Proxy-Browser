@@ -30,6 +30,25 @@ from events import Events
 from globals import config
 from PyQt6.QtWebEngineCore import QWebEngineProfile
 
+import ctypes
+
+def run_as_admin():
+    """Re-run the program with admin rights if not already elevated."""
+    if ctypes.windll.shell32.IsUserAnAdmin():
+        return True  # already admin
+
+    # re-run as admin
+    params = " ".join([f'"{arg}"' for arg in sys.argv])
+    try:
+        ctypes.windll.shell32.ShellExecuteW(
+            None, "runas", sys.executable, params, None, 1
+        )
+    except Exception as e:
+        print(f"Failed to elevate: {e}")
+        return False
+    sys.exit()  # stop current process
+
+
 class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -377,9 +396,16 @@ class Browser(QMainWindow):
         except Exception as e:
             print(f"Error checking for updates: {e}")
             return None
+        
 
     def download_and_install_update(self):
         """Downloads the latest installer and runs it."""
+        if not run_as_admin():
+            print("Admin permissions are required for updating the browser.")
+            QMessageBox.warning(self, "Admin Permissions Required",
+                                    "Admin permissions are required for updating the browser.")
+            return  # user denied UAC or failed
+
 
         self.update_dialog = UpdateDialog(self)
         self.update_dialog.show()
