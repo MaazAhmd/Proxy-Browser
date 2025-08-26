@@ -109,6 +109,12 @@
               Import/Export
             </a>
           </li>
+          <li class="nav-item mb-2">
+            <a class="nav-link {% if page == 'dialer' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
+              href="{{ url_for('dialer.index') }}">
+              Secure Your Dialer
+            </a>
+          </li>
         </ul>
       </nav>
 

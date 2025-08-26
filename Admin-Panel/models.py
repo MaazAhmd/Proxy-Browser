@@ -1,4 +1,6 @@
 import datetime
+import json
+import secrets
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from uuid import uuid4
@@ -180,3 +182,41 @@ class Session(db.Model):
     def __repr__(self):
         return f"Session({self.user_id}, {self.ip_address})"
     
+
+class DialerUser(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), nullable=False, unique=True)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    password = db.Column(db.String(100), nullable=False)  # plain text (not secure)
+    token = db.Column(db.String(255), nullable=True)
+
+    # Relationship to logs
+    logs = db.relationship("CommandLog", backref="user", lazy=True)
+
+    def generate_token(self):
+        self.token = secrets.token_hex(16)
+        return self.token
+
+    # New fields
+    apps = db.Column(db.Text, default="[]")
+    match_type = db.Column(db.String(50), nullable=True)  # "country" or "ip"
+    match_value = db.Column(db.Text, nullable=True)  # either JSON list of countries or IPs
+
+    # Monitoring
+    monitoring = db.Column(db.Boolean, default=False)  # Whether monitoring is enabled by admin
+    monitoring_status = db.Column(db.Text, default="")  # Status message ("STOPPED BY USER", "Error: ...", etc.)
+    def get_apps(self):
+        return json.loads(self.apps) if self.apps else []
+
+    def get_target_value(self):
+        return json.loads(self.target_value) if self.target_value else None
+
+    missing_apps = db.Column(db.Text, default="[]")
+
+
+class CommandLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("dialer_user.id"), nullable=False)
+    command = db.Column(db.String(255), nullable=False)
+    executed_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    result = db.Column(db.String(500), default="PENDING: Request Sent. Waiting for a response from the Client.")

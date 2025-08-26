@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Logs for {{ user.username }}</h2>
+<a href="{{ url_for('dialer.index') }}" class="btn btn-dark mb-3">⬅ Back to Users</a>
+
+<table class="table table-striped table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Command</th>
+            <th>Executed At</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.id }}</td>
+            <td>{{ log.command }}</td>
+            <td>{{ log.executed_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ log.result }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4" class="text-center text-muted">No logs available</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

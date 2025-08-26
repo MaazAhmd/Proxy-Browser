@@ -14,6 +14,7 @@ from groups import groups_bp
 from cookie import cookie_api
 from content import content_bp
 from import_export import import_export_bp
+from secure_your_dialer import dialer_bp
 
 app = Flask(__name__)
 
@@ -23,6 +24,10 @@ load_dotenv()
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 1800
+}
 
 db.init_app(app)
 migrate = Migrate(app, db)
@@ -55,6 +60,7 @@ app.register_blueprint(groups_bp, url_prefix='/groups')
 app.register_blueprint(cookie_api, url_prefix='/')
 app.register_blueprint(content_bp, url_prefix='/content')
 app.register_blueprint(import_export_bp, url_prefix='/import-export')
+app.register_blueprint(dialer_bp, url_prefix='/secure-your-dialer')
 
 app.config['DEBUG'] = True  # Add this line
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
