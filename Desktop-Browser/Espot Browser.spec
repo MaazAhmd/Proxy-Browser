@@ -7,19 +7,8 @@ a = Analysis(
     binaries=[],
     datas=[
         ('assets', 'assets'),
-        ('globals.py', '.'),
-        ('login.py', '.'),
-        ('cookies.py', '.'),
-        ('events.py', '.'),
-        ('browser.py', '.')
     ],
-    hiddenimports=[
-        'globals',
-        'login',
-        'cookies',
-        'events',
-        'browser',
-    ],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -27,13 +16,11 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
-pyz = PYZ(a.pure, a.zipped_data)
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
     name='Espot Browser',
     debug=False,
@@ -54,7 +41,6 @@ exe = EXE(
 coll = COLLECT(
     exe,
     a.binaries,
-    a.zipfiles,
     a.datas,
     strip=False,
     upx=True,

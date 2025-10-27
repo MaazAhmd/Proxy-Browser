@@ -1,10 +1,12 @@
 import os
 import threading
 import sys
+import time
 import requests
 import boto3
 import json
 import subprocess
+import psutil
 from PyQt6.QtWidgets import (
     QMainWindow,
     QTabWidget,
@@ -21,7 +23,7 @@ from PyQt6.QtWidgets import (
     QFileDialog
     
 )
-from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication, QThread, pyqtSignal, QEventLoop, Qt
+from PyQt6.QtCore import QTimer, QDateTime, QCoreApplication, QThread, pyqtSignal, QEventLoop, Qt, QProcess
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtNetwork import QNetworkProxy
 from cookies import Cookies
@@ -73,7 +75,8 @@ class Browser(QMainWindow):
             QCoreApplication.exit()
 
         self.login_dialog = LoginDialog()
-        if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
+
+        if self.login_dialog.auto_login():
             self.username = self.login_dialog.username
             self.cookies = Cookies(self.username, self._s3_client)
             self.cookies._ensure_directories()
@@ -86,8 +89,21 @@ class Browser(QMainWindow):
                 download_thread.start()
                 download_thread.join()
         else:
-            print("Login failed. Exiting...")
-            sys.exit(0)
+            if self.login_dialog.exec() == QDialog.DialogCode.Accepted:
+                self.username = self.login_dialog.username
+                self.cookies = Cookies(self.username, self._s3_client)
+                self.cookies._ensure_directories()
+                self.set_proxy()
+                print(f"Proxy set to {config.PROXY_URL}:{config.PROXY_PORT}")
+                self.disabled_after = self.login_dialog.disabled_after  # Store the disabled_after value
+                self.start_session_timer()
+                if config.SYNC_DATA:
+                    download_thread = threading.Thread(target=self.cookies.download_data_from_cloud, daemon=True)
+                    download_thread.start()
+                    download_thread.join()
+            else:
+                print("Login failed. Exiting...")
+                sys.exit(0)
 
         if hasattr(sys, '_MEIPASS'):
             assets_path = os.path.join(sys._MEIPASS, 'assets')
@@ -132,6 +148,10 @@ class Browser(QMainWindow):
         reload_button.triggered.connect(events.reload_page)
         navbar.addAction(reload_button)
 
+        # restart_button = QAction(events.get_svg_icon(events.restart_icon_svg()), "Restart", self)
+        # restart_button.triggered.connect(self.close_app)
+        # navbar.addAction(restart_button)
+
         # New Tab button (SVG icon)
         new_tab_button = QAction(events.get_svg_icon(events.new_tab_icon_svg()), "New Tab", self)
         new_tab_button.triggered.connect(events.new_tab)
@@ -139,7 +159,8 @@ class Browser(QMainWindow):
 
         # Clean Data button (SVG icon)
         clean_button = QAction(events.get_svg_icon(events.clean_icon_svg()), "Clean Now", self)
-        clean_button.triggered.connect(lambda: self.cookies.clean_data(self.tabs, events.new_tab, config.PROFILE))
+        # clean_button.triggered.connect(lambda: self.cookies.clean_data(self.tabs, events.new_tab, config.PROFILE))
+        clean_button.triggered.connect(self.clean_and_restart)
         navbar.addAction(clean_button)
 
         # Search bar
@@ -211,6 +232,39 @@ class Browser(QMainWindow):
         self.force_quit = False
         self.init_system_tray()
 
+
+    def close_app(self):
+        print("Close App requested...")
+        # self.restart_requested = True
+        self.force_quit = True
+
+        # args = sys.argv[:]
+        # if "--restart" not in args:
+        #     args.append("--restart")
+
+        # # pass cert path explicitly
+        # cert_path = os.environ.get("SSL_CERT_FILE")
+        # if cert_path and "--cert-file" not in args:
+        #     args += ["--cert-file", cert_path]
+
+        # if getattr(sys, "frozen", False):  # PyInstaller build
+        #     subprocess.Popen([sys.executable] + args, env=os.environ.copy())
+        # else:
+        #     os.execl(sys.executable, sys.executable, *args)
+
+        QTimer.singleShot(50, QCoreApplication.quit)
+        
+
+    def clean_and_restart(self):
+        self.cookies.clean_data(self.tabs, self.events.new_tab, config.PROFILE)
+
+        if hasattr(self, "login_dialog") and hasattr(self.login_dialog, "cred_manager"):
+            self.login_dialog.cred_manager.clear_credentials()
+            print("Session credentials cleared.")
+            
+        self.close_app()
+
+
     def handle_download(self, download):
         """Handle file downloads from the browser."""
         print("Download handler called!")  # Debug log
@@ -262,24 +316,26 @@ class Browser(QMainWindow):
             print("Cleaning up webengine pages")
             self.cleanup_webengine_pages()
             
-            if config.SYNC_DATA:
-                print("Starting data upload in background")
-                # Show a dialog box indicating that data is being uploaded
-                self.hide()
-                # Start the upload in a separate thread
-                self.upload_thread = threading.Thread(target=self.cookies.upload_data_to_cloud)
-                self.upload_thread.start()
+            # if config.SYNC_DATA:
+            #     print("Starting data upload in background")
+            #     # Show a dialog box indicating that data is being uploaded
+            #     self.hide()
+            #     # Start the upload in a separate thread
+            #     self.upload_thread = threading.Thread(target=self.cookies.upload_data_to_cloud)
+            #     self.upload_thread.start()
     
-                # Use a QTimer to check if the upload is complete and close the application
-                self.timer = QTimer(self)
-                self.timer.timeout.connect(self.check_upload_complete)
-                self.timer.start(1000)
+            #     # Use a QTimer to check if the upload is complete and close the application
+            #     self.timer = QTimer(self)
+            #     self.timer.timeout.connect(self.check_upload_complete)
+            #     self.timer.start(1000)
     
-                # Ignore the close event for now - let timer handle final exit
-                event.ignore()
-            else:
-                print("Accepting close event")
-                event.accept()
+            #     # Ignore the close event for now - let timer handle final exit
+            #     event.ignore()
+            # else:
+            print("Accepting close event")
+            event.accept()
+
+            QTimer.singleShot(0, QCoreApplication.exit)
             return  # Exit early to prevent tray minimization logic
         
         # Normal close behavior - minimize to tray
@@ -497,7 +553,7 @@ class Browser(QMainWindow):
         # Show quitting dialog
         quitting_dialog = QMessageBox(self)
         quitting_dialog.setWindowTitle("Quitting")
-        quitting_dialog.setText("Closing application, please wait...")
+        quitting_dialog.setText("Closing application. If it doesn't quit in 5 seconds, please try quitting again from the tray icon.")
         quitting_dialog.setStandardButtons(QMessageBox.StandardButton.NoButton)  # no close button
         quitting_dialog.setModal(True)
         quitting_dialog.show()

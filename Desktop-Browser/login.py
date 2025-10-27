@@ -20,6 +20,7 @@ import hashlib
 import uuid
 import subprocess
 import platform
+from credential_manager import CredentialManager
 
 class LoginDialog(QDialog):
     def __init__(self):
@@ -34,42 +35,52 @@ class LoginDialog(QDialog):
         self.device_id = self.get_device_id()
         self.update_login_page_content()
 
+        self.cred_manager = CredentialManager()
+
     def update_login_page_content(self):
         """Fetch and update the login page content from the backend."""
-        print("Fetching login page content...")
-        try:
-            response = requests.get(f"{config.BASE_URL}/get-login-page-content")
-            print(response.status_code)
-            if response.status_code == 200:
-                data = response.json()
-                if data["status"] == 1:
-                    content_details = data["content_details"]
-                    logo_url = content_details["logo_url"]
-                    phone_number = content_details["phone_number"]
-                    slogan = content_details["slogan"]
-                    contact_url = content_details["contact_line"]
-                    # Initialize UI components after fetching data
-                    self.init_ui(logo_url, phone_number, slogan, contact_url)
-                else:
-                    QMessageBox.warning(self, "Error", "Failed to fetch login page content, due to server error.")
-                    self.reject()  # Close the dialog if data fetch fails
-                    QCoreApplication.exit()
-            else:
-                QMessageBox.warning(self, "Error", "Failed to fetch login page content due to server error.")
-                self.reject()  # Close the dialog if data fetch fails
-                QCoreApplication.exit()
+        # print("Fetching login page content...")
+        # try:
+        #     response = requests.get(f"{config.BASE_URL}/get-login-page-content")
+        #     print(response.status_code)
+        #     if response.status_code == 200:
+        #         data = response.json()
+        #         if data["status"] == 1:
+        #             content_details = data["content_details"]
+        #             logo_url = content_details["logo_url"]
+        #             phone_number = content_details["phone_number"]
+        #             slogan = content_details["slogan"]
+        #             contact_url = content_details["contact_line"]
+        #             # Initialize UI components after fetching data
+        #             self.init_ui(logo_url, phone_number, slogan, contact_url)
+        #         else:
+        #             QMessageBox.warning(self, "Error", "Failed to fetch login page content, due to server error.")
+        #             self.reject()  # Close the dialog if data fetch fails
+        #             QCoreApplication.exit()
+        #     else:
+        #         QMessageBox.warning(self, "Error", "Failed to fetch login page content due to server error.")
+        #         self.reject()  # Close the dialog if data fetch fails
+        #         QCoreApplication.exit()
 
-        except requests.Timeout:
-            print("Request timed out.")
-            QMessageBox.warning(self, "Timeout", "Request timed out while fetching login page content.")
-            self.reject()
-            QCoreApplication.exit()
+        # except requests.Timeout:
+        #     print("Request timed out.")
+        #     QMessageBox.warning(self, "Timeout", "Request timed out while fetching login page content.")
+        #     self.reject()
+        #     QCoreApplication.exit()
 
-        except requests.RequestException as e:
-            print("Error fetching login page content:", e)
-            QMessageBox.warning(self, "Error", "Failed to fetch login page content.")
-            self.reject()  # Close the dialog if data fetch fails
-            QCoreApplication.exit()
+        # except requests.RequestException as e:
+        #     print("Error fetching login page content:", e)
+        #     QMessageBox.warning(self, "Error", "Failed to fetch login page content.")
+        #     self.reject()  # Close the dialog if data fetch fails
+        #     QCoreApplication.exit()
+
+        logo_url = 'https://i.postimg.cc/dthV0CDj/hd-Espot-Browser-Logo.png'
+        phone_number = '+923204342479'
+        slogan = 'Dialers and Tools for All Call Centers'
+        contact_url = 'In case of issues, contact Espot Solutions at:'
+
+        # Initialize UI components after fetching data
+        self.init_ui(logo_url, phone_number, slogan, contact_url)
             
 
     def init_ui(self, logo_url, phone_number, slogan, contact_line):
@@ -84,9 +95,13 @@ class LoginDialog(QDialog):
         self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Add logo at the top
         self.logo_label = QLabel(self)
-        self.logo_pixmap = QPixmap()
-        self.logo_pixmap.loadFromData(requests.get(logo_url).content)
-        self.logo_pixmap = self.logo_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        self.logo_pixmap = QPixmap(os.path.join(assets_path, "logo.png"))  # <-- load from assets
+        self.logo_pixmap = self.logo_pixmap.scaled(
+            100, 100,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+
         self.logo_label.setPixmap(self.logo_pixmap)
         self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.logo_label)
@@ -177,6 +192,82 @@ class LoginDialog(QDialog):
 
     # def get_device_id(self):
     #     return hashlib.sha256(uuid.getnode().to_bytes(6, 'big')).hexdigest()
+    def auto_login(self):
+        username, password = self.cred_manager.load_credentials()
+        if username and password:
+            details = self.get_proxy_details(username, password)
+            if not details:
+                return
+            if details and 'proxy_details' in details and 'content_details' in details:
+                self.username = username
+                self.password = password
+                self.hide()
+                proxy_details = details['proxy_details']
+                content_details = details['content_details']
+                proxy2_details = details.get('proxy2_details')  # Get backup proxy details
+                proxy3_details = details.get('proxy3_details')  # Get special website proxy details
+                proxy4_details = details.get('proxy4_details')  # Get backup for special website proxy
+                websites = details.get('websites', [])  # Get special websites array
+
+                # Check if 2FA is required
+                if details.get("requires_2fa") and not self.is_device_trusted():
+                    if not self.send_2fa(self.username):
+                        return  # Stop login if 2FA fails
+
+                # Save proxy details (existing logic)
+                config.PROXY_URL = proxy_details['proxy_url']
+                config.PROXY_PORT = proxy_details['proxy_port']
+                config.PROXY_USER = proxy_details['proxy_user']
+                config.PROXY_PASSWORD = proxy_details['proxy_password']
+                config.SYNC_DATA = proxy_details['sync_data']
+                config.DEFAULT_URL = content_details['default_url']
+                self.disabled_after = proxy_details['disabled_after']
+
+                # Save backup proxy details if available
+                if proxy2_details:
+                    config.PROXY2_URL = proxy2_details['proxy_url']
+                    config.PROXY2_PORT = proxy2_details['proxy_port']
+                    config.PROXY2_USER = proxy2_details['proxy_user']
+                    config.PROXY2_PASSWORD = proxy2_details['proxy_password']
+
+                # Save special website proxy details if available
+                if proxy3_details:
+                    config.PROXY3_URL = proxy3_details['proxy_url']
+                    config.PROXY3_PORT = proxy3_details['proxy_port']
+                    config.PROXY3_USER = proxy3_details['proxy_user']
+                    config.PROXY3_PASSWORD = proxy3_details['proxy_password']
+
+                # Save backup for special website proxy if available
+                if proxy4_details:
+                    config.PROXY4_URL = proxy4_details['proxy_url']
+                    config.PROXY4_PORT = proxy4_details['proxy_port']
+                    config.PROXY4_USER = proxy4_details['proxy_user']
+                    config.PROXY4_PASSWORD = proxy4_details['proxy_password']
+
+                # Save special websites array
+                config.SPECIAL_WEBSITES = websites
+                print("websites:", config.SPECIAL_WEBSITES)
+                # Test primary proxy and switch to backup if needed
+                if not self.test_proxy_connection():
+                    if proxy2_details and self.switch_to_backup_proxy():
+                        print("Switched to backup proxy due to primary proxy failure")
+                    else:
+                        self.show()
+                        QMessageBox.warning(self, "Connection Failed", "Both primary and backup proxies are unavailable.")
+                        return
+
+                # Remember this device after successful login
+                self.remember_device()
+
+                # Accept login and start heartbeat
+                self.accept()
+                self.start_heartbeat()
+                
+                return True
+
+            else:
+                QMessageBox.critical(self, "Login Failed", "Invalid username or password.")
+        return False
 
 
     def login(self):
@@ -188,6 +279,7 @@ class LoginDialog(QDialog):
             return
         if details and 'proxy_details' in details and 'content_details' in details:
             self.hide()
+            self.cred_manager.save_credentials(self.username, self.password)
             proxy_details = details['proxy_details']
             content_details = details['content_details']
             proxy2_details = details.get('proxy2_details')  # Get backup proxy details
@@ -447,10 +539,11 @@ class LoginDialog(QDialog):
             if platform.system() == "Windows":
                 # print("Windows Platform Detected")
                 result = subprocess.run(
-                    ['powershell', '-Command', 'Get-CimInstance -Class Win32_ComputerSystemProduct | Select-Object -ExpandProperty UUID'],
-                    capture_output=True, text=True, shell=True
+                    ['powershell', '-NoProfile', '-Command',
+                     '(Get-CimInstance Win32_ComputerSystemProduct).UUID'],
+                    capture_output=True, text=True,
+                    creationflags=subprocess.CREATE_NO_WINDOW
                 )
-
                 lines = result.stdout.strip().split('\n')
                 
                 # Try to find the UUID in any line
@@ -466,6 +559,7 @@ class LoginDialog(QDialog):
         except Exception as e:
             print(f"Error getting hardware ID: {e}")
             return None
+        
     def start_heartbeat(self):
         """Start a timer to send heartbeat signals to the server."""
         self.heartbeat_timer = QTimer(self)
@@ -490,19 +584,19 @@ class LoginDialog(QDialog):
                 self.heartbeat_timer.stop()
                 QMessageBox.warning(self, "Session Expired", "Your session has expired.")
                 self.close()
-                self.show_login_dialog()
+                sys.exit()
         except requests.RequestException as e:
             print("Error sending heartbeat:", e)
             self.heartbeat_timer.stop()
             QMessageBox.warning(self, "Session Expired", "Your session has expired.")
             self.close()
-            self.show_login_dialog()
+            sys.exit()
         except Exception as e:
             print("An error occurred while sending Heartbeat, probably network issue.")
             self.heartbeat_timer.stop()
             QMessageBox.warning(self, "Connection Error", "Unable to connect to the Server. Please fix your internet connection and Try Again.")
             self.close()
-            self.show_login_dialog()
+            sys.exit()
 
 
 class TwoFADialog(QDialog):

@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Espot Browser"
-#define MyAppVersion "5.5"
+#define MyAppVersion "5.6"
 #define MyAppPublisher "Espot Solutions"
 #define MyAppURL "https://espotsolutions.com/"
 #define MyAppExeName "Espot Browser.exe"
@@ -43,7 +43,9 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "D:\Work\Active\Proxy-Browser\Desktop-Browser\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\Work\Active\Proxy-Browser\Desktop-Browser\dist\Espot Browser\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\Work\Active\Proxy-Browser\Desktop-Browser\dist\Espot Browser\_internal\*"; DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
+
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

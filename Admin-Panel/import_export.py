@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, send_file, redirect, url_for, flash
-from models import db, User, Proxy
+from models import Content, db, User, Proxy
 import csv
 import io
 from sqlalchemy.exc import IntegrityError
@@ -53,8 +53,20 @@ def import_users():
                 session_limit=int(row.get('session_limit', 1)),
             )
             db.session.add(user)
+            db.session.commit()
             count += 1
-        db.session.commit()
+
+            default_content = Content(
+                logo_url='image_url',
+                phone_number='03204342479',
+                default_url='https://espotsolutions.com/',
+                closing_dialog='Closing, please wait.',
+                unassigned_proxy_error_dialog='Your account configuration is incomplete. Contact support.',
+                user_id=user.id
+            )
+            db.session.add(default_content)
+            db.session.commit()
+
         flash(f"{count} users imported successfully.", "success")
     except IntegrityError as e:
         db.session.rollback()
