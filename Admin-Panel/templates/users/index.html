@@ -81,7 +81,7 @@
                                         <strong>Active Till: </strong> {{ user.disabled_after.strftime("%Y-%m-%d %H:%M") }} {% else %} Not
                                         Set {% endif %}
                                 </div>
-                                <div class="py-1 text-sm"><strong>Proxy: </strong> {{ 'Not Assigned' }}</div>
+                                <div class="py-1 text-sm"><strong>Proxy: </strong> {{ user.get_proxy_hostname() or 'Not Assigned' }}</div>
                             <td class="px-4 py-4">
                                 <div class="flex flex-wrap gap-2">
                                     <a href="{{ url_for('users.edit_user', user_id=user.id) }}"
