@@ -1,250 +1,228 @@
-{% extends "base.html" %} {% block content %}
-    <h1 class="mb-4">Assign Proxy to Group</h1>
+{% extends "base.html" %}
+{% block content %}
 
-    <!-- Section: Select Proxy -->
-    <div class="mb-5 card p-4">
-        <h3>Select Proxy to Assign</h3>
-        <input
-                type="text"
-                id="proxy-search"
-                class="form-control mb-3"
-                placeholder="Search Proxies..."
-        />
-        <div
-                class="table-responsive"
-                style="
-      min-height: 300px;
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #dee2e6;
-      border-radius: 4px;
-    "
-        >
-            <table class="table table-striped" id="proxy-table">
-                <thead>
-                <tr>
-                    <th>Username</th>
-                    <th>Host</th>
-                    <th>Port</th>
-                    <th>Select</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for proxy in proxies %}
-                    <tr>
-                        <td>{{ proxy.username }}</td>
-                        <td>{{ proxy.host }}</td>
-                        <td>{{ proxy.port }}</td>
-                        <td>
-                            <button
-                                    class="btn btn-sm btn-primary select-proxy"
-                                    data-id="{{ proxy.id }}"
-                            >
-                                Select
-                            </button>
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<div class="max-w-7xl mx-auto px-6 py-10">
+  <h1 class="text-3xl font-bold text-black mb-10 flex items-center gap-2">
+    <i class="bi bi-diagram-3"></i>
+    Assign Proxy to Group
+  </h1>
+
+  <!-- Section: Select Proxy -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-10 p-6">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
+      <i class="bi bi-hdd-network"></i>
+      Select Proxy to Assign
+    </h2>
+
+    <input
+      type="text"
+      id="proxy-search"
+      class="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      placeholder="Search Proxies..."
+    />
+
+    <div class="overflow-y-auto rounded-xl border border-gray-200 max-h-80">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase">Username</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase">Host</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase">Port</th>
+            <th class="px-6 py-3 text-center text-sm font-semibold text-gray-600 uppercase">Select</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100" id="proxy-table">
+          {% for proxy in proxies %}
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-3 text-gray-800 font-medium">{{ proxy.username }}</td>
+            <td class="px-6 py-3 text-gray-600">{{ proxy.host }}</td>
+            <td class="px-6 py-3 text-gray-600">{{ proxy.port }}</td>
+            <td class="px-6 py-3 text-center">
+              <button
+                class="select-proxy bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm transition"
+                data-id="{{ proxy.id }}"
+              >
+                Select
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
-    <!-- Section: Select Group -->
-    <div class="mb-5 card p-4">
-        <h3>Select Group</h3>
-        <input
-                type="text"
-                id="group-search"
-                class="form-control mb-3"
-                placeholder="Search Groups..."
-        />
-        <div
-                class="table-responsive"
-                style="
-      min-height: 300px;
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #dee2e6;
-      border-radius: 4px;
-    "
-        >
-            <table class="table table-striped" id="group-table">
-                <thead>
-                <tr>
-                    <th>Group Name</th>
-                    <th>Select</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for group in groups %}
-                    <tr>
-                        <td>{{ group.name }}</td>
-                        <td>
-                            <button
-                                    class="btn btn-sm btn-primary select-group"
-                                    data-id="{{ group.id }}"
-                            >
-                                Select
-                            </button>
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
+  <!-- Section: Select Group -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-10 p-6">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
+      <i class="bi bi-people"></i>
+      Select Group
+    </h2>
+
+    <input
+      type="text"
+      id="group-search"
+      class="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      placeholder="Search Groups..."
+    />
+
+    <div class="overflow-y-auto rounded-xl border border-gray-200 max-h-80">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase">Group Name</th>
+            <th class="px-6 py-3 text-center text-sm font-semibold text-gray-600 uppercase">Select</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100" id="group-table">
+          {% for group in groups %}
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-6 py-3 text-gray-800 font-medium">{{ group.name }}</td>
+            <td class="px-6 py-3 text-center">
+              <button
+                class="select-group bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm transition"
+                data-id="{{ group.id }}"
+              >
+                Select
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
-    <div class="modal fade" id="confirmation-modal" tabindex="-1" aria-labelledby="confirmationModalLabel"
-         aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmationModalLabel">Confirm Assignment</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="confirmation-modal-body">
-                    <!-- This will be dynamically updated with selected proxy and group details -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button id="confirm-assign-btn" type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                        Confirm
-                    </button>
-                </div>
-            </div>
-        </div>
+  <!-- Assign Button -->
+  <div class="text-center">
+    <button
+      id="assign-group-proxy-btn"
+      class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-medium shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled
+    >
+      Assign Proxy to Group
+    </button>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmation-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-2xl shadow-lg max-w-md w-full p-6">
+    <h3 class="text-xl font-semibold text-gray-800 mb-4">Confirm Assignment</h3>
+    <p id="confirmation-modal-body" class="text-gray-600 mb-6"></p>
+    <div class="flex justify-end gap-3">
+      <button id="cancel-modal-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 font-medium">Cancel</button>
+      <button id="confirm-assign-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">Confirm</button>
     </div>
+  </div>
+</div>
 
-
-
-    <div class="modal fade" id="success-modal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="successModalLabel">Success</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="success-modal-body">
-                    <!-- This will be dynamically updated with success message -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-                </div>
-            </div>
-        </div>
+<!-- Success Modal -->
+<div id="success-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-2xl shadow-lg max-w-md w-full p-6">
+    <h3 class="text-xl font-semibold text-green-600 mb-4">Success</h3>
+    <p id="success-modal-body" class="text-gray-600 mb-6"></p>
+    <div class="flex justify-end">
+      <button id="close-success-modal-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">OK</button>
     </div>
+  </div>
+</div>
 
+<script>
+  let selectedProxyId = null;
+  let selectedGroupId = null;
+  let selectedProxyUsername = '';
+  let selectedGroupName = '';
 
+  // Select Proxy
+  document.querySelectorAll('.select-proxy').forEach(button => {
+    button.addEventListener('click', function () {
+      selectedProxyId = this.dataset.id;
+      selectedProxyUsername = this.closest('tr').querySelector('td:first-child').textContent;
+      document.querySelectorAll('.select-proxy').forEach(btn => {
+        btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        btn.textContent = 'Select';
+      });
+      this.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+      this.classList.add('bg-green-600', 'hover:bg-green-700');
+      this.textContent = 'Selected';
+      checkAssignButtonState();
+    });
+  });
 
-    <div>
-        <button id="assign-group-proxy-btn" class="btn btn-success mt-3" disabled>
-            Assign Proxy to Group
-        </button>
-    </div>
+  // Select Group
+  document.querySelectorAll('.select-group').forEach(button => {
+    button.addEventListener('click', function () {
+      selectedGroupId = this.dataset.id;
+      selectedGroupName = this.closest('tr').querySelector('td:first-child').textContent;
+      document.querySelectorAll('.select-group').forEach(btn => {
+        btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        btn.textContent = 'Select';
+      });
+      this.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+      this.classList.add('bg-green-600', 'hover:bg-green-700');
+      this.textContent = 'Selected';
+      checkAssignButtonState();
+    });
+  });
 
-    <script>
-        let selectedProxyId = null;
-        let selectedGroupId = null;
+  function checkAssignButtonState() {
+    document.getElementById('assign-group-proxy-btn').disabled = !selectedProxyId || !selectedGroupId;
+  }
 
-        // Select Proxy
-        document.querySelectorAll(".select-proxy").forEach(function (button) {
-            button.addEventListener("click", function () {
-                selectedProxyId = this.getAttribute("data-id");
-                selectedProxyUsername = this.closest("tr").querySelector("td:first-child").textContent;
-                document.querySelectorAll(".select-proxy").forEach((btn) => {
-                    btn.classList.remove("btn-success");
-                    btn.textContent = "Select";
-                });
-                this.classList.add("btn-success");
-                this.textContent = "Selected";
-                checkAssignButtonState();
-            });
-        });
+  // Show Confirmation Modal
+  document.getElementById('assign-group-proxy-btn').addEventListener('click', () => {
+    document.getElementById('confirmation-modal-body').textContent =
+      `You are assigning proxy "${selectedProxyUsername}" to group "${selectedGroupName}". This action cannot be undone.`;
+    document.getElementById('confirmation-modal').classList.remove('hidden');
+  });
 
-        // Select Group
-        document.querySelectorAll(".select-group").forEach(function (button) {
-            button.addEventListener("click", function () {
-                selectedGroupId = this.getAttribute("data-id");
-                selectedGroupName = this.closest("tr").querySelector("td:first-child").textContent;
-                document.querySelectorAll(".select-group").forEach((btn) => {
-                    btn.classList.remove("btn-success");
-                    btn.textContent = "Select";
-                });
-                this.classList.add("btn-success");
-                this.textContent = "Selected";
-                checkAssignButtonState();
-            });
-        });
+  document.getElementById('cancel-modal-btn').addEventListener('click', () => {
+    document.getElementById('confirmation-modal').classList.add('hidden');
+  });
 
-        // Enable/Disable Assign Button
-        function checkAssignButtonState() {
-            document.getElementById("assign-group-proxy-btn").disabled =
-                !selectedProxyId || !selectedGroupId;
+  // Confirm Assign
+  document.getElementById('confirm-assign-btn').addEventListener('click', () => {
+    fetch("{{ url_for('proxy.assign_proxy_group') }}", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ proxy_id: selectedProxyId, group_id: selectedGroupId }),
+    })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('confirmation-modal').classList.add('hidden');
+        if (data.success) {
+          document.getElementById('success-modal-body').textContent =
+            `Proxy "${selectedProxyUsername}" has been successfully assigned to group "${selectedGroupName}".`;
+          document.getElementById('success-modal').classList.remove('hidden');
+        } else {
+          alert("Error assigning proxy!");
         }
+      });
+  });
 
-        // Show Confirmation Modal
-        document.getElementById("assign-group-proxy-btn").addEventListener("click", function () {
-            const modalBody = document.getElementById("confirmation-modal-body");
-            modalBody.textContent = `You are assigning proxy "${selectedProxyUsername}" to group "${selectedGroupName}". This action cannot be undone.`;
+  // Close Success Modal
+  document.getElementById('close-success-modal-btn').addEventListener('click', () => {
+    document.getElementById('success-modal').classList.add('hidden');
+    location.reload();
+  });
 
-            const confirmationModal = new bootstrap.Modal(document.getElementById("confirmation-modal"));
-            confirmationModal.show();
-        });
+  // Search Filters
+  document.getElementById('proxy-search').addEventListener('input', function () {
+    const search = this.value.toLowerCase();
+    document.querySelectorAll('#proxy-table tbody tr').forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(search) ? '' : 'none';
+    });
+  });
 
-        // Handle Confirm Assign
-        document.getElementById("confirm-assign-btn").addEventListener("click", function () {
-            // Perform assignment via API
-            fetch("{{ url_for('proxy.assign_proxy_group') }}", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    proxy_id: selectedProxyId,
-                    group_id: selectedGroupId,
-                }),
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        // Update and show success modal
-                        const successModalBody = document.getElementById("success-modal-body");
-                        successModalBody.textContent = `Proxy "${selectedProxyUsername}" has been successfully assigned to group "${selectedGroupName}".`;
+  document.getElementById('group-search').addEventListener('input', function () {
+    const search = this.value.toLowerCase();
+    document.querySelectorAll('#group-table tbody tr').forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(search) ? '' : 'none';
+    });
+  });
+</script>
 
-                        const successModal = new bootstrap.Modal(document.getElementById("success-modal"));
-                        successModal.show();
-                    } else {
-                        alert("Error assigning proxy!");
-                    }
-                });
-        });
-
-        // Proxy Search
-        document
-            .getElementById("proxy-search")
-            .addEventListener("input", function () {
-                let searchTerm = this.value.toLowerCase();
-                document
-                    .querySelectorAll("#proxy-table tbody tr")
-                    .forEach(function (row) {
-                        row.style.display = row.innerText.toLowerCase().includes(searchTerm)
-                            ? ""
-                            : "none";
-                    });
-            });
-
-        // User Search
-        document.getElementById("group-search").addEventListener("input", function () {
-            let searchTerm = this.value.toLowerCase();
-            document.querySelectorAll("#group-table tbody tr").forEach(function (row) {
-                row.style.display = row.innerText.toLowerCase().includes(searchTerm)
-                    ? ""
-                    : "none";
-            });
-        });
-
-        document.getElementById("success-modal").addEventListener("hidden.bs.modal", function () {
-            location.reload();
-        });
-
-    </script>
 {% endblock %}

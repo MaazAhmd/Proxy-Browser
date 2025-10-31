@@ -27,7 +27,16 @@ SESSION_TIMEOUT = timedelta(seconds=90)
 @login_required
 def index():
     proxies = Proxy.query.all()
-    return render_template('proxies/index.html', proxies=proxies, page='proxies')
+
+    proxy_data = []
+    for proxy in proxies:
+        # Get names of users assigned to this proxy
+        user_names = [u.username for u in proxy.users.all()]
+        proxy_data.append({
+            "proxy": proxy,
+            "usernames": ", ".join(user_names) if user_names else None
+        })
+    return render_template('proxies/index.html', proxies=proxy_data, page='proxies')
 
 
 # Add a new proxy
@@ -456,3 +465,31 @@ def check_device():
     # Check if the device is already trusted
     trusted = TrustedDevice.query.filter_by(user_id=user.id, device_id=device_id).first()
     return jsonify({"trusted": bool(trusted)}), 200
+
+
+@proxies_bp.route('/bulk_delete', methods=['POST'])
+def bulk_delete_proxies():
+    data = request.get_json()
+    proxy_ids = data.get('proxy_ids', [])
+    if not proxy_ids:
+        return jsonify(success=False, message="No proxies provided")
+
+    Proxy.query.filter(Proxy.id.in_(proxy_ids)).delete(synchronize_session=False)
+    db.session.commit()
+    return jsonify(success=True)
+
+
+@proxies_bp.route('/bulk_unassign', methods=['POST'])
+def bulk_unassign_proxies():
+    data = request.get_json()
+    proxy_ids = data.get('proxy_ids', [])
+    if not proxy_ids:
+        return jsonify(success=False, message="No proxies provided")
+
+    # Set all related users' proxy assignments to None
+    users = User.query.filter(User.proxy_id.in_(proxy_ids)).all()
+    for user in users:
+        user.proxy_id = None
+
+    db.session.commit()
+    return jsonify(success=True)

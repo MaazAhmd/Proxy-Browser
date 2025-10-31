@@ -1,14 +1,44 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="my-5">Manage Content for the Login Screen</h2>
+<div class="max-w-4xl mx-auto px-6 py-10">
+    <!-- Header Section -->
+    <div class="flex items-center justify-between mb-8">
+        <h2 class="text-2xl font-bold text-gray-800">
+            Manage Content for the <span class="text-blue-600">Login Screen</span>
+        </h2>
+        <a href="{{ url_for('content.edit_login_content') }}"
+           class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Edit Content
+        </a>
+    </div>
 
-        <p><strong>Phone Number:</strong> {{ content.phone_number }}</p>
-        <p><strong>Logo URL:</strong> {{ content.logo_url }}</p>
-        <p><strong>Slogan:</strong> {{ content.slogan }}</p>
-        <p><strong>Contact Line:</strong> {{ content.contact_line }}</p>
+    <!-- Content Display -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between">
+                <p class="text-gray-600 text-sm font-medium uppercase">Phone Number</p>
+                <p class="text-gray-900 font-semibold">{{ content.phone_number }}</p>
+            </div>
 
-    <a href="{{ url_for('content.edit_login_content') }}" class="btn btn-primary my-4">Edit Content</a>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between">
+                <p class="text-gray-600 text-sm font-medium uppercase">Logo URL</p>
+                <p class="text-gray-900 font-semibold break-all">{{ content.logo_url }}</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between">
+                <p class="text-gray-600 text-sm font-medium uppercase">Slogan</p>
+                <p class="text-gray-900 font-semibold">{{ content.slogan }}</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between">
+                <p class="text-gray-600 text-sm font-medium uppercase">Contact Line</p>
+                <p class="text-gray-900 font-semibold">{{ content.contact_line }}</p>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

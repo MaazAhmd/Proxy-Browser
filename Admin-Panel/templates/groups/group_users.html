@@ -1,134 +1,201 @@
-{% extends "base.html" %} {% block content %}
-    <h1 class="mb-4">{{ group.name }} - Users</h1>
+{% extends "base.html" %}
+{% block content %}
 
-    <div class="d-flex gap-2 mb-3">
-        <a
-                href="{{ url_for('groups.add_user_to_group', group_id=group.id) }}"
-                class="btn btn-primary"
-        >
-            Add User
-        </a>
-        <a href="{{ url_for('groups.list_groups') }}" class="btn btn-secondary"
-        >Back to Groups</a
-        >
+    <div class="max-w-7xl mx-auto px-4 py-10">
+        <!-- Header Section -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <h1 class="text-3xl font-bold text-blue-600 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0
+        2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0
+        2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15
+        14.17 10.33 13 8 13zm8
+        0c-.29 0-.62.02-.97.05 1.16.84 1.97
+        1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                </svg>
+                {{ group.name }} – Users
+            </h1>
+
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ url_for('groups.add_user_to_group', group_id=group.id) }}"
+                   class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add User
+                </a>
+                <a href="{{ url_for('groups.list_groups') }}"
+                   class="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded-lg px-4 py-2 bg-white shadow-sm transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Back to Groups
+                </a>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="bg-white shadow-md rounded-2xl overflow-hidden border border-gray-100">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-blue-50 text-gray-700 uppercase text-sm font-semibold">
+                <tr>
+                    <th class="px-6 py-3 text-left">#</th>
+                    <th class="px-6 py-3 text-left">Username</th>
+                    <th class="px-6 py-3 text-left">Email</th>
+                    <th class="px-6 py-3 text-left">Active Until</th>
+                    <th class="px-6 py-3 text-left">Assigned Proxy</th>
+                    <th class="px-6 py-3 text-right">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                {% for user in group.users %}
+                    <tr id="user-row-{{ user.id }}" class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 text-gray-600">{{ loop.index }}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900">{{ user.username }}</td>
+                        <td class="px-6 py-4 text-gray-700">{{ user.email }}</td>
+                        <td class="px-6 py-4" id="active-until-{{ user.id }}">
+                            {% if user.disabled %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                Not Active
+              </span>
+                            {% elif user.disabled_after %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                {{ user.disabled_after.strftime("%Y-%m-%d %H:%M") }}
+              </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                Not Set
+              </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-gray-700">{{ user.get_proxy_hostname() or 'Not Assigned' }}</td>
+                        <td class="px-6 py-4 text-right flex justify-end gap-2">
+                            <!-- Edit -->
+                            <a href="{{ url_for('users.edit_user', user_id=user.id) }}"
+                               class="p-2 rounded-md text-blue-600 hover:bg-blue-100 transition" title="Edit User">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M11 17h2m2 0h2a2 2 0 002-2v-2m-6 6h2m-2 0a2 2 0 01-2-2v-2m0 4H9m4-4V9m-4 8V9m0 0H7m4 0h2"/>
+                                </svg>
+                            </a>
+
+                            <!-- Delete -->
+                            <form action="{{ url_for('users.delete_user', user_id=user.id) }}" method="post"
+                                  class="inline">
+                                <button
+                                        class="p-2 rounded-md text-red-600 hover:bg-red-100 transition"
+                                        onclick="return confirm('Are you sure you want to delete this user?');"
+                                        title="Delete User"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2
+                        0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 4h6m2
+                        0H7m2-1h6a2 2 0 012 2v1H5V5a2 2 0 012-2z"/>
+                                    </svg>
+                                </button>
+                            </form>
+
+                            <!-- Suspend -->
+                            <button
+                                    class="p-2 rounded-md text-yellow-600 hover:bg-yellow-100 transition suspend-btn"
+                                    data-id="{{ user.id }}"
+                                    title="Suspend User"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M10 9v6m4-6v6m-9 4h14a2 2
+                      0 002-2V7a2 2 0 00-2-2H5a2
+                      2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+
+                            <!-- Extend -->
+                            <button
+                                    type="button"
+                                    class="p-2 rounded-md text-emerald-600 hover:bg-emerald-100 transition extend-btn"
+                                    data-id="{{ user.id }}"
+                                    data-modal-target="extendModal"
+                                    title="Extend Active Time"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M12 8v4l3 3m6 1a9 9 0 11-18 0
+                      9 9 0 0118 0z"/>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            {% if not group.users %}
+                <div class="p-6 text-center text-gray-500">No users in this group yet.</div>
+            {% endif %}
+        </div>
     </div>
 
-    <table class="table table-hover table-striped">
-        <thead class="table-dark">
-        <tr>
-            <th>#</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Active Until</th>
-            <th>Assigned Proxy</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for user in group.users %}
-            <tr id="user-row-{{ user.id }}">
-                <td>{{ loop.index }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td id="active-until-{{user.id}}">
-                    {% if user.disabled %}Not Active
-                    {% elif user.disabled_after %} {{ user.disabled_after.strftime("%Y-%m-%d %H:%M") }} {% else %} Not
-                        Set {% endif %}
-                </td>
-                <td>
-                    {{ user.get_proxy_hostname() or 'Not Assigned' }}
-                </td>
-                <td>
-                    <!-- Edit Button -->
-                    <a
-                            href="{{ url_for('users.edit_user', user_id=user.id) }}"
-                            class="btn btn-primary btn-sm"
-                    >
-                        Edit
-                    </a>
-
-                    <!-- Delete Button -->
-                    <form
-                            action="{{ url_for('users.delete_user', user_id=user.id) }}"
-                            method="post"
-                            class="d-inline"
-                    >
-                        <button
-                                class="btn btn-danger btn-sm"
-                                onclick="return confirm('Are you sure you want to delete this user?');"
-                        >
-                            Delete
-                        </button>
-                    </form>
-
-                    <!-- Suspend Button -->
-                    <button
-                            class="btn btn-warning btn-sm suspend-btn"
-                            data-id="{{ user.id }}"
-                    >
-                        Suspend
+    <!-- Extend Modal -->
+    <div id="extendModal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <form id="extend-user-form" class="space-y-6">
+                <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                    <h5 class="text-lg font-semibold text-emerald-600 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 8v4l3 3m6 1a9 9 0 11-18 0
+                  9 9 0 0118 0z"/>
+                        </svg>
+                        Extend Active Time
+                    </h5>
+                    <button type="button" class="text-gray-400 hover:text-gray-600"
+                            onclick="document.getElementById('extendModal').classList.add('hidden')">
+                        ✕
                     </button>
+                </div>
 
+                <input type="hidden" id="extend-user-id"/>
 
-                    <!-- Extend Button -->
-                    <button
-                            type="button"
-                            class="btn btn-success btn-sm extend-btn"
-                            data-bs-toggle="modal"
-                            data-bs-target="#extendModal"
-                            data-id="{{ user.id }}"
-                    >
-                        Extend
+                <div>
+                    <label for="disabled_after" class="block text-sm font-semibold text-gray-700 mb-2">Disabled
+                        After</label>
+                    <input type="datetime-local" id="disabled_after" name="disabled_after" required
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"/>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button type="button"
+                            class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+                            onclick="document.getElementById('extendModal').classList.add('hidden')">
+                        Cancel
                     </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-
-                    <div class="modal fade" id="extendModal" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <form id="extend-user-form">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Extend Active Time</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <input type="hidden" id="extend-user-id"/>
-                                        <label for="disabled_after" class="form-label">Disabled After</label>
-                                        <input
-                                                type="datetime-local"
-                                                class="form-control"
-                                                id="disabled_after"
-                                                name="disabled_after"
-                                                required
-                                        />
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel
-                                        </button>
-                                        <button type="submit" class="btn btn-success">Save</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
+    <!-- JS (Unchanged Logic) -->
     <script>
-        // Add event listener for Suspend buttons
         document.addEventListener('DOMContentLoaded', () => {
-            // Suspend Button Click Handler
+            // Suspend Button
             document.querySelectorAll('.suspend-btn').forEach((button) => {
                 button.addEventListener('click', () => {
-                    if (!confirm("Are you sure you want to suspend this user?"))
-                        return
+                    if (!confirm("Are you sure you want to suspend this user?")) return;
                     const userId = button.getAttribute('data-id');
-
-                    // AJAX request to suspend the user
                     fetch('/users/suspend_user', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
@@ -138,7 +205,7 @@
                         .then((data) => {
                             if (data.success) {
                                 const activeUntilCell = document.getElementById(`active-until-${userId}`);
-                                activeUntilCell.innerText = 'Not Active';
+                                activeUntilCell.innerHTML = '<span class="badge bg-danger">Not Active</span>';
                                 alert('User suspended successfully!');
                             } else {
                                 alert('Failed to suspend user!');
@@ -150,10 +217,8 @@
                         });
                 });
             });
-        });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // Handle Extend Button Click
+            // Extend Button
             document.querySelectorAll('.extend-btn').forEach((button) => {
                 button.addEventListener('click', () => {
                     const userId = button.getAttribute('data-id');
@@ -161,11 +226,10 @@
                 });
             });
 
-            // Handle Extend Form Submission
+            // Extend Form
             const extendForm = document.getElementById('extend-user-form');
             extendForm.addEventListener('submit', (event) => {
                 event.preventDefault();
-
                 const userId = document.getElementById('extend-user-id').value;
                 const disabledAfter = document.getElementById('disabled_after').value;
 
@@ -178,13 +242,9 @@
                     .then((data) => {
                         if (data.success) {
                             const activeUntilCell = document.getElementById(`active-until-${userId}`);
-                            activeUntilCell.innerText = new Date(disabledAfter).toLocaleString();
+                            activeUntilCell.innerHTML = `<span class="badge bg-success">${new Date(disabledAfter).toLocaleString()}</span>`;
                             alert('User active time extended successfully!');
-
-                            // Close the modal
-                            const modal = document.getElementById('extendModal');
-                            const modalInstance = bootstrap.Modal.getInstance(modal);
-                            modalInstance.hide();
+                            bootstrap.Modal.getInstance(document.getElementById('extendModal')).hide();
                         } else {
                             alert('Failed to extend user active time!');
                         }

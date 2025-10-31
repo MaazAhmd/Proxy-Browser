@@ -1,31 +1,60 @@
 {% extends "base.html" %}
-
 {% block content %}
-<h2>Logs for {{ user.username }}</h2>
-<a href="{{ url_for('dialer.index') }}" class="btn btn-dark mb-3">⬅ Back to Users</a>
+<div class="max-w-5xl mx-auto mt-10 bg-white border border-gray-100 rounded-2xl shadow-md p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-semibold text-gray-800">
+      Logs for <span class="text-blue-600">{{ user.username }}</span>
+    </h2>
+    <a
+      href="{{ url_for('dialer.index') }}"
+      class="inline-flex items-center px-4 py-2 bg-gray-700 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition"
+    >
+      ⬅ Back to Users
+    </a>
+  </div>
 
-<table class="table table-striped table-hover">
-    <thead class="table-dark">
+  <div class="overflow-x-auto">
+    <table class="min-w-full border border-gray-200 divide-y divide-gray-200 rounded-lg overflow-hidden">
+      <thead class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
         <tr>
-            <th>ID</th>
-            <th>Command</th>
-            <th>Executed At</th>
-            <th>Result</th>
+          <th class="px-4 py-3 text-left text-sm font-semibold uppercase tracking-wider">ID</th>
+          <th class="px-4 py-3 text-left text-sm font-semibold uppercase tracking-wider">Command</th>
+          <th class="px-4 py-3 text-left text-sm font-semibold uppercase tracking-wider">Executed At</th>
+          <th class="px-4 py-3 text-left text-sm font-semibold uppercase tracking-wider">Result</th>
         </tr>
-    </thead>
-    <tbody>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
         {% for log in logs %}
-        <tr>
-            <td>{{ log.id }}</td>
-            <td>{{ log.command }}</td>
-            <td>{{ log.executed_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-            <td>{{ log.result }}</td>
+        <tr class="hover:bg-gray-50 transition">
+          <td class="px-4 py-3 text-gray-700">{{ log.id }}</td>
+          <td class="px-4 py-3 text-gray-800 font-medium">{{ log.command }}</td>
+          <td class="px-4 py-3 text-gray-600 text-sm">
+            {{ log.executed_at.strftime('%Y-%m-%d %H:%M:%S') }}
+          </td>
+          <td class="px-4 py-3">
+            <span
+              class="inline-block px-2 py-1 text-xs rounded-md
+                     {% if 'error' in log.result|lower %}
+                       bg-red-100 text-red-700
+                     {% elif 'success' in log.result|lower %}
+                       bg-green-100 text-green-700
+                     {% else %}
+                       bg-gray-100 text-gray-700
+                     {% endif %}"
+            >
+              {{ log.result }}
+            </span>
+          </td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="4" class="text-center text-muted">No logs available</td>
+          <td colspan="4" class="px-4 py-6 text-center text-gray-500">
+            No logs available
+          </td>
         </tr>
         {% endfor %}
-    </tbody>
-</table>
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

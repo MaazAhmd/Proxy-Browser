@@ -1,132 +1,159 @@
 {% extends "base.html" %} {% block content %}
-<h1 class="mb-4">Dashboard</h1>
-<div class="row">
-  <div class="col-md-6">
-    <div class="card text-white bg-primary mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Users</h5>
-        <p class="card-text">Total Users: {{ num_users }}</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card text-white bg-success mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Proxies</h5>
-        <p class="card-text">Total Proxies: {{ num_proxies }}</p>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 animate-slide-up">
+            <!-- Users Card -->
+            <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium uppercase tracking-wide mb-2">Total Users</p>
+                        <h3 class="text-4xl font-bold mb-1"> {{ num_users }}</h3>
+                        <p class="text-blue-100 text-sm">
+{#                            <i class="fas fa-arrow-up mr-1"></i>#}
+{#                            <span class="font-semibold">12%</span> from last month#}
+                        </p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+                        <i class="fas fa-users text-5xl"></i>
+                    </div>
+                </div>
+            </div>
 
-<div class="row">
-  <!-- Manage Users -->
-  <div class="col-md-4 d-flex">
-    <a href="{{ url_for('users.index') }}" class="text-decoration-none w-100">
-      <div class="card shadow-sm border-0 hover-card h-100">
-        <div
-          class="card-body text-center d-flex flex-column align-items-center justify-content-center"
-        >
-          <i class="fas fa-users-cog fa-3x text-primary mb-3"></i>
-          <h5 class="card-title">Manage Users</h5>
-          <p class="card-text">Add, update, or delete users from the system.</p>
+            <!-- Proxies Card -->
+            <div class="stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium uppercase tracking-wide mb-2">Total Proxies</p>
+                        <h3 class="text-4xl font-bold mb-1"> {{ num_proxies }}</h3>
+                        <p class="text-green-100 text-sm">
+{#                            <i class="fas fa-arrow-up mr-1"></i>#}
+{#                            <span class="font-semibold">8%</span> from last month#}
+                        </p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+                        <i class="fas fa-server text-5xl"></i>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </a>
-  </div>
 
-  <!-- Manage Proxies -->
-  <div class="col-md-4 d-flex">
-    <a href="{{ url_for('proxy.index') }}" class="text-decoration-none w-100">
-      <div class="card shadow-sm border-0 hover-card h-100">
-        <div
-          class="card-body text-center d-flex flex-column align-items-center justify-content-center"
-        >
-          <i class="fas fa-server fa-3x text-success mb-3"></i>
-          <h5 class="card-title">Manage Proxies</h5>
-          <p class="card-text">
-            Add, update, or delete proxy information from the system.
-          </p>
+        <!-- Management Section -->
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <i class="fas fa-cog text-blue-600 mr-2"></i>
+                Management
+            </h2>
         </div>
-      </div>
-    </a>
-  </div>
 
-  <div class="col-md-4 d-flex">
-    <a
-      href="{{ url_for('groups.list_groups') }}"
-      class="text-decoration-none w-100"
-    >
-      <div class="card shadow-sm border-0 hover-card h-100">
-        <div
-          class="card-body text-center d-flex flex-column align-items-center justify-content-center"
-        >
-          <i class="fas fa-users-cog fa-3x text-primary mb-3"></i>
-          <h5 class="card-title">Manage Groups</h5>
-          <p class="card-text">Add, update, or delete users in groups.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+            <!-- Manage Users Card -->
+            <a href="{{ url_for('users.index') }}" class="block group">
+                <div class="action-card bg-white rounded-xl shadow-md hover:shadow-2xl p-6 h-full border border-gray-100">
+                    <div class="flex flex-col items-center text-center h-full justify-between">
+                        <div class="card-icon w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
+                            <i class="fas fa-users-cog text-3xl text-blue-600"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h5 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Manage Users</h5>
+                            <p class="text-gray-600 text-sm">Add, update, or delete users from the system.</p>
+                        </div>
+                        <div class="mt-4 text-blue-600 font-semibold text-sm flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            Go to Users
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Manage Proxies Card -->
+            <a href="{{ url_for('proxy.index') }}"  class="block group">
+                <div class="action-card bg-white rounded-xl shadow-md hover:shadow-2xl p-6 h-full border border-gray-100">
+                    <div class="flex flex-col items-center text-center h-full justify-between">
+                        <div class="card-icon w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-4">
+                            <i class="fas fa-server text-3xl text-green-600"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h5 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">Manage Proxies</h5>
+                            <p class="text-gray-600 text-sm">Add, update, or delete proxy information from the system.</p>
+                        </div>
+                        <div class="mt-4 text-green-600 font-semibold text-sm flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            Go to Proxies
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Manage Groups Card -->
+            <a href="{{ url_for('groups.list_groups') }}"" class="block group">
+                <div class="action-card bg-white rounded-xl shadow-md hover:shadow-2xl p-6 h-full border border-gray-100">
+                    <div class="flex flex-col items-center text-center h-full justify-between">
+                        <div class="card-icon w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mb-4">
+                            <i class="fas fa-layer-group text-3xl text-purple-600"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h5 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">Manage Groups</h5>
+                            <p class="text-gray-600 text-sm">Add, update, or delete users in groups.</p>
+                        </div>
+                        <div class="mt-4 text-purple-600 font-semibold text-sm flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            Go to Groups
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
         </div>
-      </div>
-    </a>
-  </div>
-</div>
 
-<div class="row mt-3">
-  <!-- Assign Proxies -->
-  <div class="col-md-4 d-flex">
-    <a
-      href="{{ url_for('proxy.assign_proxy') }}"
-      class="text-decoration-none w-100"
-    >
-      <div class="card shadow-sm border-0 hover-card h-100">
-        <div
-          class="card-body text-center d-flex flex-column align-items-center justify-content-center"
-        >
-          <i class="fas fa-random fa-3x text-warning mb-3"></i>
-          <h5 class="card-title">Assign Proxies to individual users</h5>
-          <p class="card-text">Assign or unassign proxies to users.</p>
+        <!-- Assignment Section -->
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <i class="fas fa-random text-blue-600 mr-2"></i>
+                Proxy Assignment
+            </h2>
         </div>
-      </div>
-    </a>
-  </div>
 
-  <!-- Assign Proxies to Groups -->
-  <div class="col-md-4 d-flex">
-    <a
-      href="{{ url_for('proxy.assign_proxy_group') }}"
-      class="text-decoration-none w-100"
-    >
-      <div class="card shadow-sm border-0 hover-card h-100">
-        <div
-          class="card-body text-center d-flex flex-column align-items-center justify-content-center"
-        >
-          <i class="fas fa-random fa-3x text-warning mb-3"></i>
-          <h5 class="card-title">Assign Proxies to Groups</h5>
-          <p class="card-text">
-            Assign or unassign proxies to users in a group.
-          </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up" style="animation-delay: 0.2s;">
+            <!-- Assign Proxies to Individual Users -->
+            <a href="{{ url_for('proxy.assign_proxy') }}" class="block group">
+                <div class="action-card bg-white rounded-xl shadow-md hover:shadow-2xl p-6 h-full border border-gray-100">
+                    <div class="flex flex-col items-center text-center h-full justify-between">
+                        <div class="card-icon w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mb-4">
+                            <i class="fas fa-user-plus text-3xl text-amber-600"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h5 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-amber-600 transition-colors">Assign Proxies to Individual Users</h5>
+                            <p class="text-gray-600 text-sm">Assign or unassign proxies to specific users.</p>
+                        </div>
+                        <div class="mt-4 text-amber-600 font-semibold text-sm flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            Assign Now
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Assign Proxies to Groups -->
+            <a href="{{ url_for('proxy.assign_proxy_group') }}"
+                 class="block group">
+                <div class="action-card bg-white rounded-xl shadow-md hover:shadow-2xl p-6 h-full border border-gray-100">
+                    <div class="flex flex-col items-center text-center h-full justify-between">
+                        <div class="card-icon w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mb-4">
+                            <i class="fas fa-users text-3xl text-orange-600"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h5 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">Assign Proxies to Groups</h5>
+                            <p class="text-gray-600 text-sm">Assign or unassign proxies to users in a group.</p>
+                        </div>
+                        <div class="mt-4 text-orange-600 font-semibold text-sm flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            Assign to Group
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
         </div>
-      </div>
-    </a>
-  </div>
-</div>
 
-<style>
-  .hover-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  }
-
-  .hover-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  }
-
-  .hover-card i {
-    transition: color 0.2s ease-in-out;
-  }
-
-  .hover-card:hover i {
-    color: #0d6efd; /* Bootstrap primary color */
-  }
-</style>
+    </main>
 
 {% endblock %}

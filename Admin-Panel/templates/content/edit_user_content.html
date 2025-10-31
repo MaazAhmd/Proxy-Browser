@@ -1,31 +1,77 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="my-4">Edit Content for user <strong>"{{ user.username }}"</strong></h2>
-    <form method="POST">
-{#        <div class="form-group my-4">#}
-{#            <label for="logo_url">Logo URL</label>#}
-{#            <input type="text" class="form-control" id="logo_url" name="logo_url" value="{{ content.logo_url if content else '' }}">#}
-{#        </div>#}
-{#        <div class="form-group my-4">#}
-{#            <label for="phone_number">Phone Number</label>#}
-{#            <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ content.phone_number if content else '' }}">#}
-{#        </div>#}
-        <div class="form-group my-4">
-            <label for="default_url">Default URL</label>
-            <input type="text" class="form-control" id="default_url" name="default_url" value="{{ content.default_url if content else '' }}">
-        </div>
-        <div class="form-group my-4">
-            <label for="closing_dialog">Closing Dialog</label>
-            <input type="text" class="form-control" id="closing_dialog" name="closing_dialog" value="{{ content.closing_dialog if content else '' }}">
-        </div>
-        <div class="form-group my-4">
-            <label for="unassigned_proxy_error_dialog">Unassigned Proxy Error Dialog</label>
-            <input type="text" class="form-control" id="unassigned_proxy_error_dialog" name="unassigned_proxy_error_dialog" value="{{ content.unassigned_proxy_error_dialog if content else '' }}">
-        </div>
-        <button type="submit" class="btn btn-success mt-3">Save Changes</button>
-        <a href="{{ url_for('content.manage_user_content', user_id=user.id) }}" class="btn btn-secondary mt-3">Cancel</a>
-    </form>
+<div class="max-w-4xl mx-auto px-6 py-10">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <h2 class="text-2xl font-bold text-gray-800">
+            Edit Content for User
+            <span class="text-blue-600">"{{ user.username }}"</span>
+        </h2>
+        <a href="{{ url_for('content.manage_user_content', user_id=user.id) }}"
+           class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200">
+            <i class="bi bi-arrow-left mr-2"></i> Cancel
+        </a>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <form method="POST" class="p-6 space-y-6">
+
+            <!-- Default URL -->
+            <div>
+                <label for="default_url" class="block text-sm font-medium text-gray-700 mb-2">Default URL</label>
+                <input
+                    type="text"
+                    id="default_url"
+                    name="default_url"
+                    value="{{ content.default_url if content else '' }}"
+                    placeholder="Enter default URL"
+                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                />
+            </div>
+
+            <!-- Closing Dialog -->
+            <div>
+                <label for="closing_dialog" class="block text-sm font-medium text-gray-700 mb-2">Closing Dialog</label>
+                <input
+                    type="text"
+                    id="closing_dialog"
+                    name="closing_dialog"
+                    value="{{ content.closing_dialog if content else '' }}"
+                    placeholder="Enter closing dialog message"
+                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                />
+            </div>
+
+            <!-- Unassigned Proxy Error Dialog -->
+            <div>
+                <label for="unassigned_proxy_error_dialog" class="block text-sm font-medium text-gray-700 mb-2">
+                    Unassigned Proxy Error Dialog
+                </label>
+                <input
+                    type="text"
+                    id="unassigned_proxy_error_dialog"
+                    name="unassigned_proxy_error_dialog"
+                    value="{{ content.unassigned_proxy_error_dialog if content else '' }}"
+                    placeholder="Enter unassigned proxy error dialog message"
+                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                />
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-end items-center gap-3 pt-4 border-t border-gray-100">
+                <a href="{{ url_for('content.manage_user_content', user_id=user.id) }}"
+                   class="inline-flex items-center px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-lg transition-all">
+                    <i class="bi bi-x-circle mr-1"></i> Cancel
+                </a>
+                <button
+                    type="submit"
+                    class="inline-flex items-center px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all">
+                    <i class="bi bi-check-circle mr-1"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
