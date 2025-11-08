@@ -34,7 +34,7 @@ class Admin(UserMixin, db.Model):
 class User(db.Model):
     id = db.Column(db.String(32), primary_key=True, default=lambda: uuid4().hex)
     username = db.Column(db.String(100), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
     password = db.Column(db.String(200), nullable=False)
     disabled_after = db.Column(db.DateTime, nullable=True)
     disabled = db.Column(db.Boolean, nullable=False, default=False)
@@ -110,6 +110,13 @@ class Proxy(db.Model):
     password = db.Column(db.Text, nullable=False)
     host = db.Column(db.String(256), nullable=False)
     port = db.Column(db.String(16), nullable=False)
+
+    users = db.relationship(
+        'User',
+        backref='proxy',
+        lazy='dynamic',
+        foreign_keys='User.proxy_id'
+    )
     
     # assigned_to_users = db.relationship('User', back_populates='proxy')
     # assigned_to_users_2 = db.relationship('User', back_populates='proxy2')

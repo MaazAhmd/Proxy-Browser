@@ -109,7 +109,7 @@ def download_users_template():
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['username', 'email', 'password', 'session_limit'])
-    writer.writerow(['testuser', 'test@example.com', 'hashed_password_here', '1'])
+    writer.writerow(['testuser', 'test@example.com', 'password here..', '1'])
     output.seek(0)
     return send_file(io.BytesIO(output.getvalue().encode()), mimetype='text/csv',
                      download_name='users_template.csv', as_attachment=True)

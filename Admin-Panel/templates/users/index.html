@@ -1,176 +1,236 @@
 {% extends "base.html" %} {% block content %}
-    <h1 class="mb-4">Manage Users</h1>
-    <form method="get" class="mb-4">
-        <div class="input-group">
-            <input
-                    type="text"
-                    class="form-control"
-                    name="search"
-                    placeholder="Search by username..."
-                    value="{{ search_query }}"
-            />
-            <button class="btn btn-primary" type="submit">Search</button>
-        </div>
-    </form>
-    <a href="{{ url_for('users.add_user') }}" class="btn btn-success mb-4"
-    >Add New User</a
-    >
+    <body class="bg-gray-50 min-h-screen">
 
-    <table class="table table-hover table-striped">
-        <thead class="table-dark">
-        <tr>
-            <th>#</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Active Until</th>
-            <th>Assigned Proxy</th>
-            <th>Account Actions</th>
-            <th>Proxy</th>
-            <th>Session</th>
-            <th>Note</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for user in users %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>
-                    {% if user.disabled %}Not Active
-                    {% elif user.disabled_after %} {{ user.disabled_after.strftime("%Y-%m-%d %H:%M") }} {% else %} Not
-                        Set {% endif %}
-                </td>
-                <td>
-                    {{ user.get_proxy_hostname() or 'Not Assigned' }}
-                </td>
-                <td>
-                    <a
-                            href="{{ url_for('users.edit_user', user_id=user.id) }}"
-                            class="btn btn-primary btn-sm"
-                    >Edit</a
-                    >
-                    <form
-                            action="{{ url_for('users.delete_user', user_id=user.id) }}"
-                            method="post"
-                            class="d-inline"
-                    >
-                        <button
-                                class="btn btn-danger btn-sm"
-                                onclick="return confirm('Are you sure you want to delete this user?');"
-                        >
-                            Delete
-                        </button>
-                    </form>
-                    <button
-                            class="btn btn-warning btn-sm suspend-btn"
-                            data-id="{{ user.id }}"
-                    >
-                        Suspend
-                    </button>
-                    <button
-                            class="btn btn-info btn-sm extend-btn"
-                            data-id="{{ user.id }}"
-                            data-bs-toggle="modal"
-                            data-bs-target="#extendModal"
-                    >
-                        Extend
-                    </button>
-                    <a href="{{ url_for('content.manage_user_content', user_id=user.id) }}"
-                            class="btn btn-primary btn-sm mt-1"
-                    >Content</a>
-                    <button
-                            class="btn btn-sm btn-{{ "success" if user.two_factor else "danger" }} toggle-2fa-btn mt-1"
-                            data-id="{{ user.id }}"
-                            data-username="{{ user.username }}"
-                    >
-                        <i class="fas fa-2fa-alt"></i>
-                        {{ "Turn 2FA off" if user.two_factor else "Turn 2FA on" }}
-                    </button>
-                </td>
-                <td>
-                    <button
-                            class="btn btn-primary btn-sm assign-proxy-btn"
-                            data-id="{{ user.id }}"
-                            data-proxy-index="1"
-                            data-username="{{ user.username }}"
-                            data-proxy="{{ user.proxy }}"
-                    >
-                        Assign Proxy
-                    </button>
-                    <a href="{{ url_for('users.manage_websites', user_id=user.id) }}"
-                            class="btn btn-primary btn-sm mt-1"
-                    >Manage Optional Proxies</a>
-                    <form
-                        action="{{ url_for('users.remove_proxy', user_id=user.id) }}"
-                        method="post"
-                        class="d-inline"
-                    >
-                        <button
-                            class="btn btn-danger btn-sm mt-1"
-                            onclick="return confirm('Are you sure you want to remove the assigned proxy for this user?');"
-                        >
-                            Remove Proxy
-                        </button>
-                    </form>
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#sessionLimitModal"
-                            data-id="{{ user.id }}" data-username="{{ user.username }}"
-                            data-sessionlimit="{{ user.session_limit }}">
-                        <i class="fas fa-user-cog"></i> Set Session Limit
-                    </button>
-                     <button
-                            class="btn btn-sm btn-{{ "success" if user.sync_data else "danger" }} toggle-sync-btn mt-1"
-                            data-id="{{ user.id }}"
-                            data-username="{{ user.username }}"
-                    >
-                        <i class="fas fa-sync-alt"></i>
-                        {{ "Turn sync off" if user.sync_data else "Turn sync on" }}
-                    </button>
-                </td>
-                <td>
-                    {{ user.note or 'No note added' }}
-                    <button onclick="addNote('{{user.id}}')">Add Note</button>
-                </td>
-                <td>
-                    <button class="btn btn-primary" onclick="copyToClipboard('Credentials For Espot Browser:\nUsername: {{ user.username }}\nPassword: {{ user.password }}')">Copy Credentials</button>
-                </td>
-            </tr>
-
-
-        {% endfor %}
-        </tbody>
-    </table>
-    <div class="modal fade" id="assignProxyModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Assign Proxy to <span id="modalUsername"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="searchProxies" class="form-label">Search Proxies</label>
+    <!-- Main Content -->
+    <main class="max-w-[1600px] mx-auto px-6 py-8">
+        <!-- Search and Add User Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-4">
+                <form method="get" class="flex-1 max-w-md">
+                    <div class="flex gap-2">
                         <input
                                 type="text"
-                                class="form-control"
-                                id="searchProxies"
-                                placeholder="Search by proxy name or IP"
+                                name="search"
+                                placeholder="Search by username..."
+                                value="{{ search_query }}"
+                                class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                         />
+                        <button type="submit"
+                                class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm">
+                            <i class="fas fa-search mr-2"></i>Search
+                        </button>
                     </div>
-                    <ul id="proxyList" class="list-group"
-                        style="min-height: 300px; max-height: 300px; overflow-y: auto;">
+                </form>
+                <a href="{{ url_for('users.add_user') }}"
+                   class="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 hover:shadow-md transition-all duration-200 text-sm whitespace-nowrap">
+                    <i class="fas fa-user-plus mr-2"></i>Add New User
+                </a>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div class="flex gap-2 pt-4 border-t border-gray-200">
+                {#                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm">#}
+                {#                    <i class="fas fa-check-circle mr-2"></i>Activate Selected#}
+                {#                </button>#}
+                <button id="bulkSuspendBtn"
+                        class="px-4 py-2 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 hover:shadow-md transition-all duration-200 text-sm">
+                    <i class="fas fa-pause-circle mr-2"></i>Suspend Selected
+                </button>
+                <button id="bulkDeleteBtn"
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 hover:shadow-md transition-all duration-200 text-sm">
+                    <i class="fas fa-trash mr-2"></i>Delete Selected
+                </button>
+                {#                <button class="px-4 py-2 bg-cyan-600 text-white rounded-lg font-medium hover:bg-cyan-700 hover:shadow-md transition-all duration-200 text-sm">#}
+                {#                    <i class="fas fa-download mr-2"></i>Export Selected#}
+                {#                </button>#}
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                    <tr class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                        <th class="px-4 py-4 text-left text-sm font-semibold">
+                            <input id="selectAll" type="checkbox" class="w-4 h-4 rounded border-white"
+                                   onclick="toggleAllCheckboxes(this)">
+                        </th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold">#</th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold">User Details</th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold w-64">Account Actions</th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold">Proxy</th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold">Session</th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold">Note</th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                    {% for user in users %}
+                        <tr class="table-row">
+                            <td class="px-4 py-4">
+                                <input type="checkbox" value="{{ user.id }}"
+                                       class="w-4 h-4 rounded border-gray-300 user-checkbox">
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-900">{{ loop.index }}</td>
+                            <td class="px-4 py-4 text-sm font-medium text-gray-900">
+                                <div><strong>Username: </strong> {{ user.username }}</div>
+                                <div class="py-1 text-sm">
+                                    {% if user.disabled %}Not Active
+                                    {% elif user.disabled_after %}
+                                        <strong>Active Till: </strong> {{ user.disabled_after.strftime("%Y-%m-%d %H:%M") }} {% else %} Not
+                                        Set {% endif %}
+                                </div>
+                                <div class="py-1 text-sm"><strong>Proxy: </strong> {{ user.get_proxy_hostname() or 'Not Assigned' }}</div>
+                            <td class="px-4 py-4">
+                                <div class="flex flex-wrap gap-2">
+                                    <a href="{{ url_for('users.edit_user', user_id=user.id) }}"
+                                       class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm"><i
+                                            class="fas fa-edit mr-1"></i>Edit</a>
+                                    <form action="{{ url_for('users.delete_user', user_id=user.id) }}" method="post">
+                                        <button onclick="return confirm('Are you sure you want to delete this user?');"
+                                                class="px-3 py-1.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 hover:shadow-md transition-all duration-200 text-sm">
+                                            <i class="fas fa-trash mr-1"></i>Delete
+                                        </button>
+                                    </form>
+                                    <button data-id="{{ user.id }}"
+                                            class="suspend-btn px-3 py-1.5 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 hover:shadow-md transition-all duration-200 text-sm">
+                                        <i class="fas fa-pause mr-1"></i>Suspend
+                                    </button>
+                                    <button data-id="{{ user.id }}"
+                                            onclick="openModal('extendModal'); document.getElementById('extend-user-id').value='{{ user.id }}';"
+                                            class="extend-btn px-3 py-1.5 bg-cyan-600 text-white rounded-lg font-medium hover:bg-cyan-700 hover:shadow-md transition-all duration-200 text-sm">
+                                        <i class="fas fa-clock mr-1"></i>Extend
+                                    </button>
+                                    <a href="{{ url_for('content.manage_user_content', user_id=user.id) }}"
+                                       class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm mt-1"><i
+                                            class="fas fa-file-alt mr-1"></i>Content</a>
+                                    <button data-id="{{ user.id }}" data-username="{{ user.username }}"
+                                            class="toggle-2fa-btn px-3 py-1.5 text-white rounded-lg font-medium hover:bg-green-700 hover:shadow-md transition-all duration-200 text-sm mt-1 {{ "bg-green-600" if user.two_factor else "bg-red-600" }}">
+                                        <i class="fas fa-shield-alt mr-1"></i>{{ "Turn 2FA off" if user.two_factor else "Turn 2FA on" }}
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="flex flex-col gap-2">
+                                    <button data-id="{{ user.id }}" data-proxy-index="1"
+                                            data-username="{{ user.username }}" data-proxy="{{ user.proxy }}"
+                                            onclick="openModal('assignProxyModal'); document.getElementById('modalUsername').textContent='{{ user.username }}'; currentUserId='{{ user.id }}'; proxyIndex=1;"
+                                            class="assign-proxy-btn px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm">
+                                        <i class="fas fa-network-wired mr-1"></i>Assign Proxy
+                                    </button>
+                                    <a href="{{ url_for('users.manage_websites', user_id=user.id) }}"
+                                       class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm"><i
+                                            class="fas fa-cogs mr-1"></i>Manage Optional Proxies</a>
+                                    <form action="{{ url_for('users.remove_proxy', user_id=user.id) }}" method="post">
+                                        <button class="text-center px-3 py-1.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 hover:shadow-md transition-all duration-200 text-sm"
+                                                onclick="return confirm('Remove proxy?')"><i
+                                                class="fas fa-unlink mr-1"></i>Remove Proxy
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="flex flex-col gap-2">
+                                    <button onclick="openModal('sessionLimitModal'); document.getElementById('session-user-id').value='{{ user.id }}'; document.getElementById('current-session-limit').textContent='{{ user.session_limit }}'; document.getElementById('new-session-limit').value='';"
+                                            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm">
+                                        <i class="fas fa-user-clock mr-1"></i>Set Session Limit
+                                    </button>
+                                    <button data-id="{{ user.id }}" data-username="{{ user.username }}"
+                                            class="toggle-sync px-3 py-1.5 text-white rounded-lg font-medium hover:bg-green-700 hover:shadow-md transition-all duration-200 text-sm mt-1 {{ "bg-green-600 " if user.sync_data else "bg-red-600 " }}">
+                                        <i class="fas fa-sync mr-1"></i>{{ "Turn sync off" if user.sync_data else "Turn sync on" }}
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <p class="text-sm text-gray-600 mb-2">{{ user.note or 'No note added' }}</p>
+                                <button onclick="addNote('{{ user.id }}')"
+                                        class="px-3 py-1.5 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 hover:shadow-md transition-all duration-200 text-xs">
+                                    <i class="fas fa-sticky-note mr-1"></i>Add Note
+                                </button>
+                            </td>
+                            <td class="px-4 py-4">
+                                <button class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm"
+                                        onclick="copyToClipboard('Credentials For Espot Browser:\nUsername: {{ user.username }}\nPassword: {{ user.password }}')">
+                                    <i class="fas fa-copy mr-1"></i>Copy Credentials
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Assign Proxy Modal -->
+    <div id="assignProxyModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
+                <h2 class="text-xl font-semibold">
+                    Assign Proxy to <span id="modalUsername" class="text-blue-400"></span>
+                </h2>
+                <button
+                        onclick="closeModal('assignProxyModal')"
+                        class="text-white hover:text-gray-300 text-2xl"
+                >
+                    &times;
+                </button>
+            </div>
+
+            <div class="p-6">
+                <!-- Search -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Search Proxies</label
+                    >
+                    <input
+                            type="text"
+                            id="searchProxies"
+                            placeholder="Search by proxy name or IP"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    />
+                </div>
+
+                <!-- Show Assigned Checkbox -->
+                <div class="flex items-center mb-4">
+                    <input
+                            type="checkbox"
+                            id="showAssigned"
+                            class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            checked
+                    />
+                    <label
+                            for="showAssigned"
+                            class="ml-2 text-sm text-gray-700 select-none"
+                    >
+                        Show Assigned Proxies
+                    </label>
+                </div>
+
+                <!-- Proxy List -->
+                <div
+                        class="border border-gray-200 rounded-lg overflow-hidden max-h-80 overflow-y-auto"
+                >
+                    <ul class="divide-y divide-gray-200 list-group" id="proxyList">
                         {% for proxy in proxies %}
                             <li
-                                    class="list-group-item d-flex justify-content-between align-items-center"
                                     data-host="{{ proxy.host | lower }}"
+                                    data-assigned="{{ 'true' if (proxy.users.all()|length > 0) else 'false' }}"
+                                    class="list-group-item flex justify-between items-center p-4 hover:bg-gray-50 transition"
                             >
-                                {{ proxy.host }}
+            <span class="text-sm text-gray-900">
+              {{ proxy.host }}
+                {% if proxy.assigned_to %}
+                    <span
+                            class="ml-2 text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full"
+                    >Assigned</span
+                    >
+                {% endif %}
+            </span>
                                 <button
-                                        class="btn btn-success btn-sm assign-btn"
                                         data-proxy-id="{{ proxy.id }}"
+                                        class="assign-btn px-3 py-1.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 hover:shadow-md transition-all duration-200 text-sm"
                                 >
                                     Assign
                                 </button>
@@ -178,369 +238,411 @@
                         {% endfor %}
                     </ul>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
+            </div>
+
+            <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                <button
+                        onclick="closeModal('assignProxyModal')"
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 hover:shadow-md transition-all duration-200 text-sm"
+                >
+                    Close
+                </button>
             </div>
         </div>
     </div>
 
 
-    <div
-            class="modal fade"
-            id="extendModal"
-            tabindex="-1"
-            aria-labelledby="extendModalLabel"
-            aria-hidden="true"
-    >
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="extendModalLabel">Extend User Activity</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="extend-form">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="extend-datetime" class="form-label">Select Date & Time</label>
-                            <input
-                                    type="datetime-local"
-                                    class="form-control"
-                                    id="extend-datetime"
-                                    name="disabled_after"
-                                    required
-                            />
-                        </div>
-                        <input type="hidden" id="extend-user-id" name="user_id"/>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
-                    </div>
-                </form>
+    <!-- Extend Modal -->
+    <div id="extendModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4">
+            <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
+                <h2 class="text-xl font-semibold">Extend User Activity</h2>
+                <button onclick="closeModal('extendModal')" class="text-white hover:text-gray-300 text-2xl">&times;
+                </button>
             </div>
+            <form class="p-6" id="extend-form">
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Date & Time</label>
+                    <input type="datetime-local" id="extend-datetime" name="disabled_after" required
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"/>
+                    <input type="hidden" id="extend-user-id" name="user_id"/>
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button type="button" onclick="closeModal('extendModal')"
+                            class="px-6 py-2.5 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 hover:shadow-md transition-all duration-200 text-sm">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm">
+                        Save
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-
-    <!-- Modal for setting session limit -->
-    <div class="modal fade" id="sessionLimitModal" tabindex="-1" aria-labelledby="sessionLimitModalLabel"
-         aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="sessionLimitModalLabel">Set Session Limit</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="session-limit-form">
-                    <div class="modal-body">
-                        <p>Current Allowed Sessions: <span id="current-session-limit"></span></p>
-                        <div class="mb-3">
-                            <label for="new-session-limit" class="form-label">New Session Limit</label>
-                            <input type="number" class="form-control" id="new-session-limit" name="session_limit"
-                                   min="1" required/>
-                        </div>
-                        <input type="hidden" id="session-user-id" name="user_id"/>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
-                    </div>
-                </form>
+    <!-- Session Limit Modal -->
+    <div id="sessionLimitModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4">
+            <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
+                <h2 class="text-xl font-semibold">Set Session Limit</h2>
+                <button onclick="closeModal('sessionLimitModal')" class="text-white hover:text-gray-300 text-2xl">
+                    &times;
+                </button>
             </div>
+            <form id="session-limit-form" class="p-6">
+                <p class="text-sm text-gray-600 mb-4">Current Allowed Sessions: <span id="current-session-limit"
+                                                                                      class="font-semibold text-gray-900">5</span>
+                </p>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">New Session Limit</label>
+                    <input type="number" min="1" id="new-session-limit" name="session_limit"
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                           required/>
+                    <input type="hidden" id="session-user-id" name="user_id"/>
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button type="button" onclick="closeModal('sessionLimitModal')"
+                            class="px-6 py-2.5 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 hover:shadow-md transition-all duration-200 text-sm">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 hover:shadow-md transition-all duration-200 text-sm">
+                        Save
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
+    <!-- Modal Controls -->
     <script>
-        async function copyToClipboard(text) {
-        // Try modern Clipboard API
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            try {
-            await navigator.clipboard.writeText(text);
-            return true; // Success
-            } catch (err) {
-            console.error("Clipboard API failed, falling back.", err);
-            }
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.getElementById(modalId).classList.add('flex');
         }
 
-        // Fallback for older browsers
-        try {
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById(modalId).classList.remove('flex');
+        }
+
+        // Close modal when clicking outside content
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal(modal.id);
+            });
+        });
+    </script>
+
+    <!-- Copy Credentials -->
+    <script>
+        async function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    alert("Copied to clipboard!");
+                    return;
+                } catch (err) {
+                    console.warn("Clipboard API failed, fallback used.", err);
+                }
+            }
             const ta = document.createElement("textarea");
             ta.value = text;
             ta.style.position = "fixed";
             ta.style.left = "-9999px";
             document.body.appendChild(ta);
             ta.select();
-            const ok = document.execCommand("copy");
+            document.execCommand("copy");
             document.body.removeChild(ta);
-            return ok;
-        } catch (err) {
-            console.error("Fallback copy failed.", err);
-            return false;
-        }
+            alert("Copied to clipboard!");
         }
     </script>
 
+    <!-- Add Note -->
     <script>
         function addNote(user_id) {
             const note = prompt("Enter note:");
-            
-            if (note && note.trim() !== "") {
-                fetch(`/users/add-note/${user_id}`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ note: note.trim() })
-                })
-                .then(response => response.json())
+            if (!note || note.trim() === "") {
+                alert("Note cannot be empty.");
+                return;
+            }
+
+            fetch(`/users/add-note/${user_id}`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({note: note.trim()})
+            })
+                .then(res => res.json())
                 .then(data => {
                     if (data.success) {
                         alert("Note added successfully!");
                         location.reload();
-                    } else {
-                        alert("Error: " + (data.message || "Could not add note."));
-                    }
+                    } else alert("Error: " + (data.message || "Failed to add note."));
                 })
-                .catch(error => {
-                    console.error("Error:", error);
+                .catch(err => {
+                    console.error("Error:", err);
                     alert("An error occurred while adding the note.");
                 });
-            } else {
-                alert("Note cannot be empty.");
-            }
         }
+    </script>
 
+    <!-- Checkboxes -->
+    <script>
+        function toggleAllCheckboxes(source) {
+            document.querySelectorAll(".user-checkbox").forEach(chk => chk.checked = source.checked);
+        }
+    </script>
 
+    <!-- Session Limit -->
+    <script>
         document.addEventListener("DOMContentLoaded", function () {
-            let sessionLimitModal = document.getElementById("sessionLimitModal");
-            sessionLimitModal.addEventListener("show.bs.modal", function (event) {
-                let button = event.relatedTarget;
-                let userId = button.getAttribute("data-id");
-                let username = button.getAttribute("data-username");
-                let currentLimit = button.getAttribute("data-sessionlimit");
+            // Show session limit modal
+            document.querySelectorAll("[data-modal-target='sessionLimitModal']").forEach(button => {
+                button.addEventListener("click", function () {
+                    const modal = document.getElementById("sessionLimitModal");
+                    openModal("sessionLimitModal");
 
-                document.getElementById("current-session-limit").textContent = currentLimit;
-                document.getElementById("session-user-id").value = userId;
+                    document.getElementById("current-session-limit").textContent = button.dataset.sessionlimit;
+                    document.getElementById("session-user-id").value = button.dataset.id;
+                });
             });
 
-            document.getElementById("session-limit-form").addEventListener("submit", function (event) {
-                event.preventDefault();
-                let formData = new FormData(this);
-
+            // Handle session limit form
+            document.getElementById("session-limit-form").addEventListener("submit", function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
                 fetch("/users/update-session-limit", {
                     method: "POST",
                     body: formData
                 })
-                    .then(response => response.json())
+                    .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            alert("Session limit updated successfully!");
+                            alert("Session limit updated!");
+                            closeModal("sessionLimitModal");
                             location.reload();
-                        } else {
-                            alert("Error: " + data.message);
-                        }
-                    })
-                    .catch(error => console.error("Error:", error));
+                        } else alert("Error: " + data.message);
+                    });
             });
+        });
+    </script>
+
+    <!-- Toggle Sync + 2FA -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Sync toggle
+            document.querySelectorAll(".toggle-sync").forEach(button => {
+                button.addEventListener("click", function () {
+                    const userId = this.dataset.id;
+                    const el = this;
+                    fetch("/users/toggle_sync", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({user_id: userId})
+                    })
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d.success) {
+                                el.textContent = d.sync_data ? "Turn sync off" : "Turn sync on";
+                                alert("Sync updated!");
+                            } else alert(d.message);
+                        });
+                });
+            });
+
+            // 2FA toggle
+            document.querySelectorAll(".toggle-2fa-btn").forEach(button => {
+                button.addEventListener("click", function () {
+                    const userId = this.dataset.id;
+                    const el = this;
+                    fetch("/users/toggle_2fa", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({user_id: userId})
+                    })
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d.success) {
+                                el.textContent = d.two_factor ? "Turn 2FA off" : "Turn 2FA on";
+                                alert("2FA updated!");
+                            } else alert(d.message);
+                        });
+                });
+            });
+        });
+    </script>
+
+    <!-- Suspend / Extend / Assign Proxy -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Suspend user
+            document.querySelectorAll(".suspend-btn").forEach(button => {
+                button.addEventListener("click", () => {
+                    const userId = button.dataset.id;
+                    if (confirm("Suspend this user?")) {
+                        fetch(`{{ url_for('users.suspend_user') }}`, {
+                            method: "POST",
+                            headers: {"Content-Type": "application/json"},
+                            body: JSON.stringify({user_id: userId})
+                        })
+                            .then(r => r.json())
+                            .then(d => {
+                                if (d.success) {
+                                    alert("User suspended!");
+                                    location.reload();
+                                } else alert("Failed to suspend user.");
+                            });
+                    }
+                });
+            });
+
+            // Extend user modal
+            document.querySelectorAll(".extend-btn").forEach(button => {
+                button.addEventListener("click", () => {
+                    openModal("extendModal");
+                    document.getElementById("extend-user-id").value = button.dataset.id;
+                });
+            });
+
+            // Extend form
+            document.getElementById("extend-form").addEventListener("submit", (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                fetch(`{{ url_for('users.extend_user') }}`, {
+                    method: "POST",
+                    body: JSON.stringify(Object.fromEntries(formData)),
+                    headers: {"Content-Type": "application/json"},
+                })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.success) {
+                            alert("User extended!");
+                            closeModal("extendModal");
+                            location.reload();
+                        } else alert("Failed to extend user.");
+                    });
+            });
+
+            // Assign proxy modal
+            const proxyModal = document.getElementById("assignProxyModal");
+            const proxyList = document.getElementById("proxyList");
+            const searchInput = document.getElementById("searchProxies");
+            const showAssignedCheckbox = document.getElementById("showAssigned");
+            let currentUserId = null;
+            let proxyIndex = null;
+
+            document.querySelectorAll(".assign-proxy-btn").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    currentUserId = btn.dataset.id;
+                    proxyIndex = btn.dataset.proxyIndex;
+                    document.getElementById("modalUsername").textContent = btn.dataset.username;
+                    openModal("assignProxyModal");
+                });
+            });
+
+// 🔍 Filter proxies by search and checkbox
+            function filterProxies() {
+                const query = searchInput.value.toLowerCase();
+                const showAssigned = showAssignedCheckbox.checked;
+
+                proxyList.querySelectorAll("li").forEach((item) => {
+                    const host = item.getAttribute("data-host");
+                    const isAssigned = item.getAttribute("data-assigned") === "true";
+                    const matchesSearch = host.includes(query);
+                    const matchesAssigned = showAssigned || !isAssigned;
+
+                    item.style.display = matchesSearch && matchesAssigned ? "" : "none";
+                });
+            }
+
+            // Real-time filtering
+            searchInput.addEventListener("input", filterProxies);
+            showAssignedCheckbox.addEventListener("change", filterProxies);
+
+            // Assign proxy
+            proxyList.addEventListener("click", (e) => {
+                if (e.target.classList.contains("assign-btn")) {
+                    const proxyId = e.target.dataset.proxyId;
+                    fetch("/users/assign_proxy", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({
+                            user_id: currentUserId,
+                            proxy_id: proxyId,
+                            proxy_index: proxyIndex,
+                        }),
+                    })
+                        .then((r) => r.json())
+                        .then((d) => {
+                            if (d.success) {
+                                alert("Proxy assigned!");
+                                closeModal("assignProxyModal");
+                                location.reload();
+                            } else alert("Failed to assign proxy.");
+                        });
+                }
+            });
+
         });
     </script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            document.querySelectorAll(".toggle-sync-btn").forEach(button => {
-                button.addEventListener("click", function () {
-                    const userId = this.dataset.id;
-                    const buttonElement = this;
+            const selectAll = document.getElementById("selectAll");
+            const userCheckboxes = document.querySelectorAll(".user-checkbox");
 
-                    fetch('/users/toggle_sync', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({user_id: userId}),
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                if (buttonElement.classList.contains("btn-success")) {
-                                    buttonElement.classList.remove("btn-success");
-                                    buttonElement.classList.add("btn-danger");
-                                } else {
-                                    buttonElement.classList.remove("btn-danger");
-                                    buttonElement.classList.add("btn-success");
-                                }
-                                buttonElement.textContent = data.sync_data ? "Turn sync off" : "Turn sync on";
-                            } else {
-                                alert(data.message);
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error:", error);
-                            alert("An error occurred while updating sync status.");
-                        });
-                });
+            selectAll.addEventListener("change", function () {
+                userCheckboxes.forEach(cb => cb.checked = selectAll.checked);
             });
-            document.querySelectorAll(".toggle-2fa-btn").forEach(button => {
-                button.addEventListener("click", function () {
-                    const userId = this.dataset.id;
-                    const buttonElement = this;
 
-                    fetch('/users/toggle_2fa', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({user_id: userId}),
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                if (buttonElement.classList.contains("btn-success")) {
-                                    buttonElement.classList.remove("btn-success");
-                                    buttonElement.classList.add("btn-danger");
-                                } else {
-                                    buttonElement.classList.remove("btn-danger");
-                                    buttonElement.classList.add("btn-success");
-                                }
-                                buttonElement.textContent = data.two_factor ? "Turn 2FA off" : "Turn 2FA on";
-                            } else {
-                                alert(data.message);
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error:", error);
-                            alert("An error occurred while updating 2FA status.");
-                        });
-                });
+            function getSelectedUserIds() {
+                return Array.from(userCheckboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+            }
+
+            // Bulk Suspend
+            document.getElementById("bulkSuspendBtn").addEventListener("click", function () {
+                const ids = getSelectedUserIds();
+                if (ids.length === 0) return alert("No users selected.");
+                if (!confirm(`Suspend ${ids.length} selected users?`)) return;
+
+                fetch("/users/bulk_suspend", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({user_ids: ids})
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) location.reload();
+                        else alert("Error: " + data.message);
+                    });
             });
+
+            // Bulk Delete
+            document.getElementById("bulkDeleteBtn").addEventListener("click", function () {
+                console.log("Bulk delete button called.");
+                const ids = getSelectedUserIds();
+                if (ids.length === 0) return alert("No users selected.");
+                if (!confirm(`Delete ${ids.length} selected users?`)) return;
+
+                fetch("/users/bulk_delete", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({user_ids: ids})
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) location.reload();
+                        else alert("Error: " + data.message);
+                    });
+            });
+
         });
-
     </script>
 
-    <script>
-        // Handle Suspend Button
-        document.querySelectorAll(".suspend-btn").forEach((button) => {
-            button.addEventListener("click", function () {
-                const userId = this.getAttribute("data-id");
-                if (confirm("Are you sure you want to suspend this user?")) {
-                    fetch(`{{ url_for('users.suspend_user') }}`, {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify({user_id: userId}),
-                    })
-                        .then((response) => response.json())
-                        .then((data) => {
-                            if (data.success) {
-                                alert("User suspended successfully!");
-                                location.reload();
-                            } else {
-                                alert("Failed to suspend user.");
-                            }
-                        });
-                }
-            });
-        });
+    </body>
 
-        // Handle Extend Button
-        document.querySelectorAll(".extend-btn").forEach((button) => {
-            button.addEventListener("click", function () {
-                const userId = this.getAttribute("data-id");
-                document.getElementById("extend-user-id").value = userId;
-            });
-        });
-
-        // Submit Extend Form
-        document.getElementById("extend-form").addEventListener("submit", function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            fetch(`{{ url_for('users.extend_user') }}`, {
-                method: "POST",
-                body: JSON.stringify(Object.fromEntries(formData)),
-                headers: {"Content-Type": "application/json"},
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        alert("User activity extended successfully!");
-                        const extendModal = bootstrap.Modal.getInstance(document.getElementById("extendModal"));
-                        extendModal.hide();
-                        location.reload();
-                    } else {
-                        alert("Failed to extend user activity.");
-                    }
-                });
-        });
-        document.addEventListener('DOMContentLoaded', () => {
-            const modal = new bootstrap.Modal(document.getElementById('assignProxyModal'));
-            const proxyList = document.getElementById('proxyList');
-            const searchProxies = document.getElementById('searchProxies');
-            let currentUserId = null;
-            let proxyIndex = null;
-
-            // Attach click listeners to assign proxy buttons
-            document.querySelectorAll('.assign-proxy-btn').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    currentUserId = btn.dataset.id;
-                    proxyIndex = btn.dataset.proxyIndex;
-                    const username = btn.dataset.username;
-                    
-                    console.log(proxyIndex, currentUserId, username);
-
-                    // Set modal title
-                    document.getElementById('modalUsername').textContent = username;
-
-                    // Open the modal
-                    modal.show();
-                });
-            });
-
-            // Filter proxies in the list
-            searchProxies.addEventListener('input', () => {
-                const query = searchProxies.value.toLowerCase();
-                const items = proxyList.querySelectorAll('li');
-
-                items.forEach((item) => {
-                    const host = item.getAttribute('data-host');
-                    if (host.includes(query)) {
-                        item.style.display = ''; // Show the item
-                        item.classList.add('d-flex')
-                    } else {
-                        item.style.display = 'none'; // Hide the item
-                        item.classList.remove('d-flex')
-                    }
-                });
-            });
-
-            // Handle proxy assignment
-            proxyList.addEventListener('click', (event) => {
-                if (event.target.classList.contains('assign-btn')) {
-                    const proxyId = event.target.dataset.proxyId;
-
-                    // Send the assignment request
-                    fetch(`/users/assign_proxy`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({user_id: currentUserId, proxy_id: proxyId, proxy_index: proxyIndex}),
-                    })
-                        .then((response) => response.json())
-                        .then((data) => {
-                            if (data.success) {
-                                alert('Proxy assigned successfully!');
-                                modal.hide();
-                            } else {
-                                alert('Failed to assign proxy.');
-                            }
-                        })
-                        .catch((error) => {
-                            console.error('Error assigning proxy:', error);
-                            alert('An error occurred while assigning the proxy.');
-                        });
-                }
-            });
-        });
-
-
-    </script>
 
 {% endblock %}

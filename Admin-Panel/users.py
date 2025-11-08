@@ -45,12 +45,12 @@ def index():
 def add_user():
     if request.method == 'POST':
         username = request.form['username']
-        email = request.form['email']
+        email = request.form.get('email')
         password = request.form['password']
         disabled_after_str = request.form['disabled_after']
 
         # Validate input
-        if not username or not email or not password or not disabled_after_str:
+        if not username or not password or not disabled_after_str:
             flash('All fields are required!', 'danger')
             return redirect(url_for('users.add_user'))
 
@@ -58,10 +58,11 @@ def add_user():
         if user:
             flash('User with this username already exists.', 'danger')
             return redirect(url_for('users.add_user'))
-        user = User.query.filter_by(email=email).first()
-        if user:
-            flash('User with this email already exists.', 'danger')
-            return redirect(url_for('users.add_user'))
+        if email:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                flash('User with this email already exists.', 'danger')
+                return redirect(url_for('users.add_user'))
 
         try:
             # Convert the disabled_after string to a datetime object
@@ -108,7 +109,7 @@ def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     if request.method == 'POST':
         username = request.form['username']
-        email = request.form['email']
+        email = request.form.get('email')
 
         check_user = User.query.filter_by(username=username).first()
         if check_user:
@@ -116,11 +117,12 @@ def edit_user(user_id):
                 flash('User with this username already exists.', 'danger')
                 return redirect(url_for('users.edit_user', user_id=user_id))
 
-        check_user = User.query.filter_by(email=email).first()
-        if check_user:
-            if not check_user.email == user.email:
-                flash('User with this email already exists.', 'danger')
-                return redirect(url_for('users.edit_user', user_id=user_id))
+        if email:
+            check_user = User.query.filter_by(email=email).first()
+            if check_user:
+                if not check_user.email == user.email:
+                    flash('User with this email already exists.', 'danger')
+                    return redirect(url_for('users.edit_user', user_id=user_id))
 
         user.username = username
         user.email = email
@@ -378,3 +380,27 @@ def add_note(user_id):
     
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+
+
+@users_bp.route('/bulk_suspend', methods=['POST'])
+def bulk_suspend():
+    data = request.get_json()
+    user_ids = data.get('user_ids', [])
+    for uid in user_ids:
+        user = User.query.get(uid)
+        if user:
+            user.disabled = True
+    db.session.commit()
+    return jsonify(success=True)
+
+
+@users_bp.route('/bulk_delete', methods=['POST'])
+def bulk_delete():
+    data = request.get_json()
+    user_ids = data.get('user_ids', [])
+    for uid in user_ids:
+        user = User.query.get(uid)
+        if user:
+            db.session.delete(user)
+    db.session.commit()
+    return jsonify(success=True)

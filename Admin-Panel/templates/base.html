@@ -1,148 +1,269 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ title if title else "Admin Panel" }}</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/styles.css') }}"
-    />
-    <link
-      rel="icon"
-      href="{{ url_for('static', filename='images/logo.ico') }}"
-      type="image/x-icon"
-    />
-  </head>
-  <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container-fluid">
-        <img
-          src="{{ url_for('static', filename='images/logo.ico') }}"
-          alt="Logo"
-          style="width: 2rem"
-          class="m-2 me-3"
-        />
-        <a class="navbar-brand" href="/">Admin Panel</a>
-        <div class="collapse navbar-collapse justify-content-end">
-          <ul class="navbar-nav">
-            <li class="nav-item mt-2">
-              <span class="navbar-text text-light">Logged in as: Admin</span>
-            </li>
-            <li class="nav-item ms-3">
-              <a class="btn btn-danger" href="{{ url_for('auth.logout') }}"
-                >Logout</a
-              >
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
-    <div class="d-flex">
-      <!-- Sidebar -->
-      <nav class="bg-light sidebar vh-100">
-        <ul class="nav flex-column p-3">
-          <li class="nav-item mb-2">
-            <a
-              class="nav-link {% if page == 'dashboard' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
-              href="/"
-            >
-              Dashboard
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a
-              class="nav-link {% if page == 'users' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
-              href="{{ url_for('users.index') }}"
-            >
-              Manage Users
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a
-              class="nav-link {% if page == 'proxies' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
-              href="{{ url_for('proxy.index') }}"
-            >
-              Manage Proxies
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a
-              class="nav-link {% if page == 'assign_proxies' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
-              href="{{ url_for('proxy.assign_proxy') }}"
-            >
-              Assign Proxies to Users
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a
-              class="nav-link {% if page == 'assign_proxies_group' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
-              href="{{ url_for('proxy.assign_proxy_group') }}"
-            >
-              Assign Proxies to Groups
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a
-              class="nav-link {% if page == 'groups' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
-              href="{{ url_for('groups.list_groups') }}"
-            >
-              Manage Groups
-            </a>
-          </li>
-            <li class="nav-item mb-2">
-            <a
-              class="nav-link {% if page == 'login-content' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
-              href="{{ url_for('content.manage_login_content') }}"
-            >
-              Manage Login Page
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a class="nav-link {% if page == 'import_export' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
-              href="{{ url_for('import_export.import_export_page') }}">
-              Import/Export
-            </a>
-          </li>
-          <li class="nav-item mb-2">
-            <a class="nav-link {% if page == 'dialer' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"
-              href="{{ url_for('dialer.index') }}">
-              Secure Your Dialer
-            </a>
-          </li>
-        </ul>
-      </nav>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <meta name="description" content="User management dashboard for administrators">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-      <!-- Content -->
-      <main class="flex-grow-1 p-3">
-        <!-- Flashed Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %} {% if
-        messages %}
-        <div class="container">
-          {% for category, message in messages %}
-          <div
-            class="alert alert-{{ category }} alert-dismissible fade show"
-            role="alert"
-          >
-            {{ message }}
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="alert"
-              aria-label="Close"
-            ></button>
-          </div>
-          {% endfor %}
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .table-row:hover {
+            background-color: rgb(249 250 251);
+            transition: background-color 150ms;
+        }
+    </style>
+</head>
+<body>
+<!-- Navbar -->
+{#    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">#}
+{#      <div class="container-fluid">#}
+{#        <img#}
+{#          src="{{ url_for('static', filename='images/logo.ico') }}"#}
+{#          alt="Logo"#}
+{#          style="width: 2rem"#}
+{#          class="m-2 me-3"#}
+{#        />#}
+{#        <a class="navbar-brand" href="/">Admin Panel</a>#}
+{#        <div class="collapse navbar-collapse justify-content-end">#}
+{#          <ul class="navbar-nav">#}
+{#            <li class="nav-item mt-2">#}
+{#              <span class="navbar-text text-light">Logged in as: Admin</span>#}
+{#            </li>#}
+{#            <li class="nav-item ms-3">#}
+{#              <a class="btn btn-danger" href="{{ url_for('auth.logout') }}"#}
+{#                >Logout</a#}
+{#              >#}
+{#            </li>#}
+{#          </ul>#}
+{#        </div>#}
+{#      </div>#}
+{#    </nav>#}
+{#    <div class="d-flex">#}
+{#      <!-- Sidebar -->#}
+{#      <nav class="bg-light sidebar vh-100">#}
+{#        <ul class="nav flex-column p-3">#}
+{#          <li class="nav-item mb-2">#}
+{#            <a#}
+{#              class="nav-link {% if page == 'dashboard' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"#}
+{#              href="/"#}
+{#            >#}
+{#              Dashboard#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item mb-2">#}
+{#            <a#}
+{#              class="nav-link {% if page == 'users' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"#}
+{#              href="{{ url_for('users.index') }}"#}
+{#            >#}
+{#              Manage Users#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item mb-2">#}
+{#            <a#}
+{#              class="nav-link {% if page == 'proxies' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"#}
+{#              href="{{ url_for('proxy.index') }}"#}
+{#            >#}
+{#              Manage Proxies#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item mb-2">#}
+{#            <a#}
+{#              class="nav-link {% if page == 'assign_proxies' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"#}
+{#              href="{{ url_for('proxy.assign_proxy') }}"#}
+{#            >#}
+{#              Assign Proxies to Users#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item mb-2">#}
+{#            <a#}
+{#              class="nav-link {% if page == 'assign_proxies_group' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"#}
+{#              href="{{ url_for('proxy.assign_proxy_group') }}"#}
+{#            >#}
+{#              Assign Proxies to Groups#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item mb-2">#}
+{#            <a#}
+{#              class="nav-link {% if page == 'groups' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"#}
+{#              href="{{ url_for('groups.list_groups') }}"#}
+{#            >#}
+{#              Manage Groups#}
+{#            </a>#}
+{#          </li>#}
+{#            <li class="nav-item mb-2">#}
+{#            <a#}
+{#              class="nav-link {% if page == 'login-content' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"#}
+{#              href="{{ url_for('content.manage_login_content') }}"#}
+{#            >#}
+{#              Manage Login Page#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item mb-2">#}
+{#            <a class="nav-link {% if page == 'import_export' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"#}
+{#              href="{{ url_for('import_export.import_export_page') }}">#}
+{#              Import/Export#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item mb-2">#}
+{#            <a class="nav-link {% if page == 'dialer' %}bg-secondary text-white{% else %}text-dark{% endif %}" style="border-radius: 0.5em;"#}
+{#              href="{{ url_for('dialer.index') }}">#}
+{#              Secure Your Dialer#}
+{#            </a>#}
+{#          </li>#}
+{#        </ul>#}
+{#      </nav>#}
+<!-- Header -->
+<header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-[1600px] mx-auto px-6 py-4">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-users-cog text-blue-600 mr-2"></i>
+                Admin Panel
+            </h1>
+            <nav class="flex gap-6">
+                <a href="/" class="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+                    <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+                </a>
+                <a href="{{ url_for('users.index') }}"
+                   class="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+                    <i class="fas fa-users mr-1"></i> Users
+                </a>
+                <a href="{{ url_for('proxy.index') }}"
+                   class="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+                    <i class="fas fa-server mr-1"></i> Proxies
+                </a>
+                <a href="{{ url_for('proxy.assign_proxy') }}"
+                   class="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+                    <i class="fas fa-chart-line mr-1"></i> Assign Proxies
+                </a>
+{#                <a href="{{ url_for('groups.list_groups') }}"#}
+{#                   class="text-gray-600 hover:text-blue-600 transition-colors font-medium">#}
+{#                    <i class="fas fa-cog mr-1"></i> Groups#}
+{#                </a>#}
+{#                <a href="{{ url_for('proxy.assign_proxy_group') }}"#}
+{#                   class="text-gray-600 hover:text-blue-600 transition-colors font-medium">#}
+{#                    <i class="fas fa-cog mr-1"></i> Assign Groups#}
+{#                </a>#}
+                <a href="{{ url_for('import_export.import_export_page') }}"
+                   class="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+                    <i class="fas fa-cog mr-1"></i> Import/Export
+                </a>
+                <a href="{{ url_for('dialer.index') }}"
+                   class="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+                    <i class="fas fa-cog mr-1"></i> Secure Your Dialer
+                </a>
+                <a href="{{ url_for('auth.logout') }}"
+                   class="text-white p-1 px-3 bg-red-500 rounded-lg hover:text-gray-100 transition-colors font-medium">
+                    <i class="fas fa-user mr-1"></i> Logout
+                </a>
+            </nav>
         </div>
-        {% endif %} {% endwith %} {% block content %}{% endblock %}
-      </main>
     </div>
+</header>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
+<main class="flex-grow p-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container max-w-3xl mx-auto space-y-3 mb-6">
+                {% for category, message in messages %}
+                    <div
+                            class="flash-message flex items-center justify-between px-4 py-3 rounded-lg border shadow-sm text-sm font-medium transition-all duration-300 opacity-100
+                            {% if category == 'success' %} bg-green-50 border-green-200 text-green-800
+                            {% elif category == 'error' or category == 'danger' %} bg-red-50 border-red-200 text-red-800
+                            {% elif category == 'warning' %} bg-yellow-50 border-yellow-200 text-yellow-800
+                            {% else %} bg-blue-50 border-blue-200 text-blue-800 {% endif %}"
+                            role="alert"
+                    >
+                        <div class="flex items-center gap-2">
+                            {% if category == 'success' %}
+                                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor"
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M5 13l4 4L19 7"/>
+                                </svg>
+                            {% elif category == 'error' or category == 'danger' %}
+                                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            {% elif category == 'warning' %}
+                                <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor"
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M12 9v2m0 4h.01M4.93 4.93l14.14 14.14"/>
+                                </svg>
+                            {% else %}
+                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor"
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M13 16h-1v-4h-1m1-4h.01M12 20h.01"/>
+                                </svg>
+                            {% endif %}
+                            <span>{{ message }}</span>
+                        </div>
+
+                        <button
+                                class="text-gray-500 hover:text-gray-700 transition close-flash"
+                                aria-label="Close"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<script>
+    document.querySelectorAll(".close-flash").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const alert = btn.closest(".flash-message");
+            alert.classList.add("opacity-0", "scale-95");
+            setTimeout(() => alert.remove(), 300);
+        });
+    });
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 </html>

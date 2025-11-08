@@ -1,36 +1,14 @@
-# import os, certifi
+import os
 
-APP_KEY = "espot-browser-beta-key"  # Make this unique for your app
-# def ensure_static_certifi():
-#     appdata = os.path.join(os.environ.get("APPDATA", os.getcwd()), "EspotBrowser")
-#     os.makedirs(appdata, exist_ok=True)
+os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
+    "--no-sandbox "
+    "--force-webrtc-ip-handling-policy=disable_non_proxied_udp "
+    "--webrtc-hide-local-ips-with-mdns "
+    "--webrtc-multiple-routes-enabled=false "
+    "--webrtc-nonproxied-udp-enabled=false "
+    "--disable-webrtc"
+)
 
-#     pem_path = os.path.join(appdata, "cacert.pem")
-
-#     # Copy the pem from bundled certifi to our static location
-#     try:
-#         src = certifi.where()
-#         if not os.path.exists(pem_path):
-#             shutil.copyfile(src, pem_path)
-#     except Exception as e:
-#         print("⚠️ Could not copy certifi.pem:", e)
-
-#     print("Using certifi pem at:", pem_path)
-#     return pem_path
-
-# # Force environment
-# pem_path = ensure_static_certifi()
-# os.environ["SSL_CERT_FILE"] = pem_path
-# os.environ["REQUESTS_CA_BUNDLE"] = pem_path
-
-# # Force certifi to always return our static pem
-# certifi.where = lambda: pem_path
-# print("certifi.where:", certifi.where())
-
-
-import requests
-import filecmp
-import shutil
 from browser import Browser
 import sys
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QProgressBar, QApplication, QMessageBox
@@ -39,6 +17,7 @@ from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 import traceback
 
 # print("requests.DEFAULT_CA_BUNDLE_PATH:", requests.utils.DEFAULT_CA_BUNDLE_PATH)
+APP_KEY = "espot-browser-beta-key"  # Make this unique for your app
 
 class LoadingDialog(QDialog):
     def __init__(self):
@@ -115,12 +94,9 @@ def is_another_instance_running():
 
 
 if __name__ == "__main__":
-    if "--restart" not in sys.argv:
-        if is_another_instance_running():
-            print("Another instance detected. Activating...")
-            sys.exit(0)
-    else:
-        print("Restart flag detected, allowing new instance to start.")
+    if is_another_instance_running():
+        print("Another instance detected. Activating...")
+        sys.exit(0)
 
     app = QApplication(sys.argv)
 
