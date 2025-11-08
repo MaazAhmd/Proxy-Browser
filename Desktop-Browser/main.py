@@ -1,3 +1,14 @@
+import os
+
+os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
+    "--no-sandbox "
+    "--force-webrtc-ip-handling-policy=disable_non_proxied_udp "
+    "--webrtc-hide-local-ips-with-mdns "
+    "--webrtc-multiple-routes-enabled=false "
+    "--webrtc-nonproxied-udp-enabled=false "
+    "--disable-webrtc"
+)
+
 from browser import Browser
 import sys
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QProgressBar, QApplication
@@ -5,6 +16,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 
 APP_KEY = "espot-browser-beta-key"  # Make this unique for your app
+
 
 class LoadingDialog(QDialog):
     def __init__(self):
