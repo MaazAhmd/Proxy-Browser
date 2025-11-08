@@ -76,14 +76,15 @@ class LoginDialog(QDialog):
 
         logo_url = 'https://i.postimg.cc/dthV0CDj/hd-Espot-Browser-Logo.png'
         phone_number = '+923204342479'
+        version_number = f'Version - v{config.CURRENT_VERSION}'
         slogan = 'Dialers and Tools for All Call Centers'
         contact_url = 'In case of issues, contact Espot Solutions at:'
 
         # Initialize UI components after fetching data
-        self.init_ui(logo_url, phone_number, slogan, contact_url)
+        self.init_ui(logo_url, phone_number, version_number, slogan, contact_url)
             
 
-    def init_ui(self, logo_url, phone_number, slogan, contact_line):
+    def init_ui(self, logo_url, phone_number, version_number, slogan, contact_line):
         """Initialize the UI components with the fetched data."""
 
         layout = QVBoxLayout()
@@ -105,6 +106,11 @@ class LoginDialog(QDialog):
         self.logo_label.setPixmap(self.logo_pixmap)
         self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.logo_label)
+
+        self.version_label = QLabel(f"{version_number}")
+        self.version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.version_label)
+
         self.tagline_label = QLabel(f"{slogan}")
         self.tagline_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.tagline_label)

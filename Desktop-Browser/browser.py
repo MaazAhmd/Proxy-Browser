@@ -114,7 +114,7 @@ class Browser(QMainWindow):
         self.events = events  # Store events reference for cleanup
         self.setWindowIcon(QIcon(os.path.join(assets_path, "logo.png")))
         # Browser Window Setup
-        self.setWindowTitle("Espot Browser")
+        self.setWindowTitle(f"Espot Browser - v{config.CURRENT_VERSION}")
         self.resize(1280, 800)
         self.cookies._getProfile()
         # Tab Widget to manage multiple tabs
