@@ -13,19 +13,34 @@ users_bp = Blueprint('users', __name__, url_prefix='/users')
 @login_required
 def index():
     search_query = request.args.get('search', '')
+    filter_type = request.args.get('filter', '')  # new filter param
 
+    # Base query (exclude grouped users)
+    query = User.query.filter(User.group_id == None)
+
+    # Apply search filter
     if search_query:
-        users = User.query.filter(
-            User.username.ilike(f'%{search_query}%'),
-            User.group_id == None
-        ).order_by(User.username.asc()).all()
-    else:
-        users = User.query.filter(
-            User.group_id == None
-        ).order_by(User.username.asc()).all()
+        query = query.filter(User.username.ilike(f'%{search_query}%'))
 
+    # Apply user status filters
+    if filter_type == 'suspended':
+        query = query.filter(User.disabled == True)
+
+    elif filter_type == 'active':
+        query = query.filter(
+            (User.disabled == False) | (User.disabled == None)
+        )
+
+    elif filter_type == 'expiring':
+        tomorrow = datetime.now().date() + timedelta(days=1)
+        query = query.filter(
+            db.func.date(User.disabled_after) == tomorrow
+        )
+
+    users = query.order_by(User.username.asc()).all()
+
+    # Auto-disable expired users
     for user in users:
-        # print(user.disabled_after, datetime.now())
         if user.disabled_after and user.disabled_after <= datetime.now():
             user.disabled = True
     db.session.commit()
@@ -36,7 +51,8 @@ def index():
         users=users,
         search_query=search_query,
         page='users',
-        proxies=proxies
+        proxies=proxies,
+        current_filter=filter_type
     )
 
 

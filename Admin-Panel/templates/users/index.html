@@ -46,6 +46,33 @@
             </div>
         </div>
 
+      <!-- Filter Buttons -->
+        <div class="flex gap-2 pt-4 border-t border-gray-200 my-4">
+            <a href="{{ url_for('users.index', filter='suspended') }}"
+               class="px-4 py-2 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 hover:shadow-md transition-all duration-200 text-sm
+                      {% if current_filter == 'suspended' %}ring-2 ring-amber-300{% endif %}">
+                <i class="fas fa-pause-circle mr-2"></i>Suspended Users
+            </a>
+
+            <a href="{{ url_for('users.index', filter='expiring') }}"
+               class="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 hover:shadow-md transition-all duration-200 text-sm
+                      {% if current_filter == 'expiring' %}ring-2 ring-orange-300{% endif %}">
+                <i class="fas fa-clock mr-2"></i>Expiring Soon
+            </a>
+
+            <a href="{{ url_for('users.index', filter='active') }}"
+               class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 hover:shadow-md transition-all duration-200 text-sm
+                      {% if current_filter == 'active' %}ring-2 ring-green-300{% endif %}">
+                <i class="fas fa-check-circle mr-2"></i>Active Users
+            </a>
+
+            <a href="{{ url_for('users.index') }}"
+               class="px-4 py-2 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 hover:shadow-md transition-all duration-200 text-sm">
+                <i class="fas fa-times mr-2"></i>Remove Filters
+            </a>
+        </div>
+
+
         <!-- Users Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
